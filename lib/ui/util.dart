@@ -84,3 +84,8 @@ Color planColor(Plan p) => switch (p) {
       Plan.interested => const Color(0xFF5AA9FF),
       Plan.notGoing => const Color(0xFF9E9E9E),
     };
+
+/// Zieleń Spotify: tym kolorem apka wyróżnia eventy z artystami, których słuchasz.
+const spotifyGreen = Color(0xFF1ED760);
+
+String spotifyLabel(int? rank) => rank == null ? 'Słuchasz' : 'Spotify #$rank';

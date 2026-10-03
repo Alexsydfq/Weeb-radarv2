@@ -38,7 +38,7 @@ class Glass extends StatelessWidget {
             borderRadius: br,
             side: BorderSide(
               color: highlight ?? scheme.onSurface.withValues(alpha: 0.08),
-              width: highlight != null ? 1.6 : 1,
+              width: highlight != null ? 2.2 : 1,
             ),
           ),
           child: InkWell(

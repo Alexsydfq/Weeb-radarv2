@@ -21,6 +21,7 @@ class EventCard extends StatelessWidget {
     final matched = s.matchedArtists(event);
     final fav = s.favourites.contains(event.id);
     final plan = s.planOf(event.id);
+    final rank = s.spotifyRank(event);
     final next = event.nextStop;
     final kc = kindColor(event.kind);
 
@@ -30,7 +31,7 @@ class EventCard extends StatelessWidget {
        opacity: plan == Plan.notGoing ? 0.55 : 1,
        child: Glass(
         padding: const EdgeInsets.fromLTRB(12, 12, 6, 12),
-        highlight: matched.isNotEmpty ? s.accent : null,
+        highlight: matched.isNotEmpty ? spotifyGreen : null,
         onTap: () => Navigator.of(context).push(EventDetailPage.route(event)),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,6 +46,8 @@ class EventCard extends StatelessWidget {
                     spacing: 6,
                     runSpacing: 4,
                     children: [
+                      if (matched.isNotEmpty)
+                        Pill(spotifyLabel(rank), color: spotifyGreen, icon: Icons.headphones_rounded),
                       if (plan != null) Pill(planLabels[plan]!, color: planColor(plan), icon: planIcon(plan)),
                       Pill(kindLabels[event.kind] ?? event.kind, color: kc, icon: kindIcon(event.kind)),
                       if (s.isNew(event)) const Pill('NOWE', color: Color(0xFFFF5370), icon: Icons.auto_awesome),
@@ -80,14 +83,15 @@ class EventCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Icon(Icons.favorite_rounded, size: 14, color: s.accent),
+                        const Icon(Icons.headphones_rounded, size: 14, color: spotifyGreen),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             'Słuchasz: ${matched.join(', ')}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelMedium?.copyWith(color: s.accent),
+                            style: theme.textTheme.labelMedium
+                                ?.copyWith(color: spotifyGreen, fontWeight: FontWeight.w700),
                           ),
                         ),
                       ],

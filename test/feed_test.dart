@@ -98,4 +98,21 @@ void main() {
     expect(other.host, 'example.com');
     expect(h2, isEmpty, reason: 'token nie wycieka do obcych stron');
   });
+
+  test('Spotify: miejsce w topce i słowa-pułapki', () async {
+    SharedPreferences.setMockInitialValues({});
+    final s = AppState(await SharedPreferences.getInstance());
+    RadarEvent ev(String artist, String note) => RadarEvent.fromJson(
+        {'id': artist, 'artist': artist, 'note': note, 'dateStart': '2030-01-01', 'stops': []});
+    final miku = ev('Hatsune Miku', 'MIKU EXPO');
+    expect(s.spotifyRank(miku), 1);
+    expect(s.isSpotify(miku), isTrue);
+    // „Queen” w opisie innego koncertu nie robi z niego Twojego artysty…
+    final other = ev('Ktoś', 'Covery Queen i występ na New Year\'s Eve, tak jest');
+    expect(s.isSpotify(other), isFalse);
+    expect(s.spotifyRank(other), isNull);
+    // …ale koncert samego Queen już tak.
+    expect(s.isSpotify(ev('Queen', 'Trasa')), isTrue);
+    expect(s.score(miku), greaterThan(s.score(ev('Ktoś inny', 'Vocaloid'))));
+  });
 }

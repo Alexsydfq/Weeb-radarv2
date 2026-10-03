@@ -269,10 +269,36 @@ class AppState extends ChangeNotifier {
     return re.hasMatch(text);
   }
 
+  static final _strict = {for (final n in strictArtistNames) n.toLowerCase()};
+
   List<String> matchedArtists(RadarEvent e) {
     final text = e.searchable;
-    return artists.where((a) => mentions(text, a)).toList();
+    final head = e.artist.trim().toLowerCase();
+    return artists.where((a) {
+      final n = a.trim().toLowerCase();
+      // „Queen”, „toe”, „Belle” itp. tylko jako dokładna nazwa artysty eventu.
+      if (_strict.contains(n)) return head == n;
+      return mentions(text, a);
+    }).toList();
   }
+
+  static final _spotifyRanks = <String, int>{
+    for (final (i, n) in spotifyTopArtists.indexed.toList().reversed) n.toLowerCase(): i + 1,
+  };
+
+  /// Najwyższe miejsce w Twoim Spotify „Top ogólnie” spośród artystów eventu
+  /// (null, gdy nikogo z tej listy tam nie ma).
+  int? spotifyRank(RadarEvent e) {
+    int? best;
+    for (final a in matchedArtists(e)) {
+      final r = _spotifyRanks[a.toLowerCase()];
+      if (r != null && (best == null || r < best)) best = r;
+    }
+    return best;
+  }
+
+  /// Czy na evencie gra ktoś, kogo słuchasz (lista artystów pochodzi ze Spotify).
+  bool isSpotify(RadarEvent e) => matchedArtists(e).isNotEmpty;
 
   List<String> matchedKeywords(RadarEvent e) {
     final text = '${e.searchable} ${e.kind}';
@@ -283,6 +309,8 @@ class AppState extends ChangeNotifier {
   int score(RadarEvent e) {
     var s = e.tier * 10;
     s += matchedArtists(e).length * 25;
+    final rank = spotifyRank(e);
+    if (rank != null) s += rank <= 10 ? 40 : rank <= 50 ? 25 : 12;
     s += matchedKeywords(e).length * 6;
     if (e.countries.any(isHome)) s += 12;
     final entry = entries[e.id];

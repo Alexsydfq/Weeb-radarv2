@@ -11,6 +11,9 @@ import 'widgets/glass.dart';
 enum _Sort { date, match }
 
 /// Ekran główny: najbliższy hit, statystyki, wyszukiwarka, filtry i lista.
+/// Spotify = tylko Twoi artyści, Dla mnie = cały Twój gust, Wszystko = bez filtra.
+enum _Scope { spotify, forYou, all }
+
 class RadarPage extends StatefulWidget {
   const RadarPage({super.key});
 
@@ -20,7 +23,8 @@ class RadarPage extends StatefulWidget {
 
 class _RadarPageState extends State<RadarPage> {
   final _search = TextEditingController();
-  bool _forYou = true;
+  _Scope _scope = _Scope.forYou;
+  bool get _forYou => _scope != _Scope.all;
   final Set<String> _kinds = {};
   String? _country;
   _Sort _sort = _Sort.date;
@@ -39,7 +43,8 @@ class _RadarPageState extends State<RadarPage> {
     final q = _search.text.trim().toLowerCase();
 
     var list = upcoming.where((e) {
-      if (_forYou && !s.isForYou(e)) return false;
+      if (_scope == _Scope.forYou && !s.isForYou(e)) return false;
+      if (_scope == _Scope.spotify && !s.isSpotify(e)) return false;
       if (_kinds.isNotEmpty && !_kinds.contains(e.kind)) return false;
       if (_country != null && !e.countries.contains(_country)) return false;
       if (q.isNotEmpty) {
@@ -56,8 +61,11 @@ class _RadarPageState extends State<RadarPage> {
       ..sort((a, b) => countryName(a).compareTo(countryName(b)));
     final kinds = <String>{for (final e in upcoming) e.kind}.toList()..sort();
 
+    // Na górze najpierw to, czego słuchasz na Spotify, potem reszta pod Twój gust.
     final best = ([...upcoming.where(s.isForYou)]
           ..sort((a, b) {
+            final bySpotify = (s.isSpotify(b) ? 1 : 0).compareTo(s.isSpotify(a) ? 1 : 0);
+            if (bySpotify != 0) return bySpotify;
             final byScore = s.score(b).compareTo(s.score(a));
             return byScore != 0 ? byScore : a.nextDate.compareTo(b.nextDate);
           }))
@@ -124,13 +132,15 @@ class _RadarPageState extends State<RadarPage> {
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        SegmentedButton<bool>(
+                        SegmentedButton<_Scope>(
                           segments: const [
-                            ButtonSegment(value: true, label: Text('Dla mnie'), icon: Icon(Icons.favorite_rounded)),
-                            ButtonSegment(value: false, label: Text('Wszystko'), icon: Icon(Icons.public_rounded)),
+                            ButtonSegment(
+                                value: _Scope.spotify, label: Text('Spotify'), icon: Icon(Icons.headphones_rounded)),
+                            ButtonSegment(value: _Scope.forYou, label: Text('Dla mnie'), icon: Icon(Icons.favorite_rounded)),
+                            ButtonSegment(value: _Scope.all, label: Text('Wszystko'), icon: Icon(Icons.public_rounded)),
                           ],
-                          selected: {_forYou},
-                          onSelectionChanged: (v) => setState(() => _forYou = v.first),
+                          selected: {_scope},
+                          onSelectionChanged: (v) => setState(() => _scope = v.first),
                         ),
                         const SizedBox(width: 8),
                         for (final k in kinds) ...[
@@ -359,6 +369,7 @@ class _HeroCard extends StatelessWidget {
     final theme = Theme.of(context);
     final kc = kindColor(event.kind);
     final matched = s.matchedArtists(event);
+    final spotify = matched.isNotEmpty;
     final next = event.nextStop;
     return ClipRRect(
       borderRadius: BorderRadius.circular(26),
@@ -371,11 +382,18 @@ class _HeroCard extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  s.accent.withValues(alpha: 0.85),
-                  kc.withValues(alpha: 0.75),
-                  Colors.black.withValues(alpha: 0.55),
-                ],
+                // Ze Spotify: mocna zieleń. Reszta (Twój gust ogólnie): spokojniej.
+                colors: spotify
+                    ? [
+                        spotifyGreen.withValues(alpha: 0.9),
+                        kc.withValues(alpha: 0.7),
+                        Colors.black.withValues(alpha: 0.55),
+                      ]
+                    : [
+                        kc.withValues(alpha: 0.45),
+                        Colors.black.withValues(alpha: 0.55),
+                        Colors.black.withValues(alpha: 0.7),
+                      ],
               ),
             ),
             child: Stack(
@@ -391,7 +409,10 @@ class _HeroCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(children: [
-                        const Pill('POLECAM', color: Colors.white, icon: Icons.auto_awesome),
+                        spotify
+                            ? Pill(spotifyLabel(s.spotifyRank(event)).toUpperCase(),
+                                color: Colors.white, icon: Icons.headphones_rounded)
+                            : const Pill('POLECAM', color: Colors.white, icon: Icons.auto_awesome),
                         const SizedBox(width: 6),
                         Pill(countdown(event.nextDate), color: Colors.white, icon: Icons.timer_outlined),
                       ]),
@@ -415,7 +436,7 @@ class _HeroCard extends StatelessWidget {
                         style: theme.textTheme.labelLarge?.copyWith(color: Colors.white),
                       ),
                       if (matched.isNotEmpty)
-                        Text('♥ ${matched.join(', ')}',
+                        Text('🎧 ${matched.join(', ')}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.labelMedium?.copyWith(color: Colors.white)),
@@ -439,7 +460,7 @@ class _Stats extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final mine = events.where((e) => s.matchedArtists(e).isNotEmpty).length;
+    final mine = events.where(s.isSpotify).length;
     final home = events.where((e) => e.countries.any(s.isHome)).length;
     final soon = events.where((e) => e.nextDate.difference(todayDate()).inDays <= 30).length;
     Widget tile(String n, String label, IconData icon) => Expanded(
@@ -463,7 +484,7 @@ class _Stats extends StatelessWidget {
       children: [
         tile('${events.length}', 'nadchodzące', Icons.event_available_rounded),
         const SizedBox(width: 8),
-        tile('$mine', 'z Twoimi', Icons.favorite_rounded),
+        tile('$mine', 'ze Spotify', Icons.headphones_rounded),
         const SizedBox(width: 8),
         tile('$home', s.homeCountry == 'EU' ? 'w Europie' : '${flagOf(s.homeCountry)} u Ciebie', Icons.home_rounded),
         const SizedBox(width: 8),

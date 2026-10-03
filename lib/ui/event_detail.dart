@@ -84,11 +84,13 @@ class EventDetailPage extends StatelessWidget {
               children: [
                 Glass(
                   padding: const EdgeInsets.all(20),
-                  highlight: matched.isNotEmpty ? s.accent : null,
+                  highlight: matched.isNotEmpty ? spotifyGreen : null,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Wrap(spacing: 6, runSpacing: 6, children: [
+                        if (matched.isNotEmpty)
+                          Pill(spotifyLabel(s.spotifyRank(event)), color: spotifyGreen, icon: Icons.headphones_rounded),
                         Pill(kindLabels[event.kind] ?? event.kind, color: kc, icon: kindIcon(event.kind)),
                         Pill(countdown(event.nextDate), icon: Icons.timer_outlined),
                         Pill('dopasowanie ${event.tier}/3', icon: Icons.tune_rounded),
@@ -105,7 +107,7 @@ class EventDetailPage extends StatelessWidget {
                       if (matched.isNotEmpty || keywords.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         Wrap(spacing: 6, runSpacing: 6, children: [
-                          for (final a in matched) Pill(a, color: s.accent, icon: Icons.favorite_rounded),
+                          for (final a in matched) Pill(a, color: spotifyGreen, icon: Icons.headphones_rounded),
                           for (final k in keywords) Pill(k, icon: Icons.tag_rounded),
                         ]),
                       ],
