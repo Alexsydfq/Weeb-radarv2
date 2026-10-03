@@ -154,6 +154,20 @@ class AppState extends ChangeNotifier {
     cardOpacity = p.getDouble('ui.cardOpacity') ?? cardOpacity;
 
     artists = p.getStringList('taste.artists') ?? artists;
+    // Nowi artyści z aktualizacji apki trafiają na listę, ale tych, których
+    // sam usunąłeś, nie wskrzeszamy (pamiętamy, co już było proponowane).
+    final known = p.getStringList('taste.knownDefaults')?.toSet();
+    final have = {for (final a in artists) a.toLowerCase()};
+    final fresh = defaultArtists
+        .where((a) => !(known?.contains(a) ?? false) && !have.contains(a.toLowerCase()))
+        .toList();
+    if (fresh.isNotEmpty) {
+      artists = [...artists, ...fresh];
+      p.setStringList('taste.artists', artists);
+    }
+    if (known == null || fresh.isNotEmpty || known.length != defaultArtists.length) {
+      p.setStringList('taste.knownDefaults', defaultArtists);
+    }
     keywords = p.getStringList('taste.keywords') ?? keywords;
     entries = decodeEntries(p.getString('plans.entries'));
     if (!p.containsKey('plans.entries')) {

@@ -124,6 +124,20 @@ void main() {
     expect(phone.notified, {'miku', 'deco', 'vocafest'});
   });
 
+  test('nowi domyślni artyści dochodzą, usunięci nie wracają', () async {
+    final old = await device(FakeGitHub(), prefs: {'taste.artists': ['Ado', 'Moja Kapela']});
+    expect(old.artists, containsAll(['Ado', 'Moja Kapela', 'Nilfruits', 'DECO*27']));
+    // Użytkownik usuwa Nilfruits: po ponownym starcie nie wraca.
+    final p = await SharedPreferences.getInstance();
+    final kept = old.artists.where((a) => a != 'Nilfruits').toList();
+    final again = await device(FakeGitHub(), prefs: {
+      'taste.artists': kept,
+      'taste.knownDefaults': p.getStringList('taste.knownDefaults')!,
+    });
+    expect(again.artists, isNot(contains('Nilfruits')));
+    expect(again.artists.length, kept.length);
+  });
+
   test('zły token daje czytelny błąd i nie psuje lokalnych planów', () async {
     final gh = FakeGitHub();
     final s = await device(gh, prefs: {'sync.token': 'bad'});

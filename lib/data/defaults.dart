@@ -300,6 +300,13 @@ const defaultArtists = <String>[
   'Savage Garden',
   'yukkuriK',
   'THE DU',
+  // Spotify: ostatnio słuchane i polubione, spoza topki (3.10.2026)
+  'Arianne',
+  'Nilfruits',
+  'DYES IWASAKI',
+  'P丸様｡',
+  'Ui',
+  'OK Glass',
 ];
 
 /// Festiwale, na które Awex jeździ. Daty z musicfestivalwizard.com (3.10.2026),
@@ -893,5 +900,5 @@ const spotifyTopArtists = <String>[
 /// Nazwy, które są też zwykłymi słowami (np. „Queen”, „toe”, „Belle”):
 /// liczą się tylko wtedy, gdy to dokładnie nazwa artysty eventu, a nie słowo w opisie.
 const strictArtistNames = <String>{
-  'aimi', 'amu', 'arm', 'astrophysics', 'atena', 'azari', 'belle', 'capi', 'choko', 'dada', 'enako', 'eve', 'gaku', 'giga', 'hachi', 'hanon', 'hya', 'ia', 'jin', 'jorn', 'kano', 'kira', 'koko', 'lv.4', 'marina', 'maron', 'mega', 'mimi', 'minami', 'noboru', 'nor', 'oishii', 'omoi', 'parang', 'philo', 'picco', 'ppp', 'queen', 'rejection', 'rish', 'shiki', 'soraru', 'such', 'suzie', 'tak', 'tepe', 'toa', 'toe', 'true', 'tsukino', 'tuki.', 'uma', 'visualeyes', 'yoko takahashi', 'yooh',
+  'aimi', 'amu', 'arianne', 'arm', 'astrophysics', 'atena', 'azari', 'belle', 'capi', 'choko', 'dada', 'enako', 'eve', 'gaku', 'giga', 'hachi', 'hanon', 'hya', 'ia', 'jin', 'jorn', 'kano', 'kira', 'koko', 'lv.4', 'marina', 'maron', 'mega', 'mimi', 'minami', 'noboru', 'nor', 'oishii', 'ok glass', 'omoi', 'parang', 'philo', 'picco', 'ppp', 'queen', 'rejection', 'rish', 'shiki', 'soraru', 'such', 'suzie', 'tak', 'tepe', 'toa', 'toe', 'true', 'tsukino', 'tuki.', 'ui', 'uma', 'visualeyes', 'yoko takahashi', 'yooh',
 };
