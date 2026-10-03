@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../background/background.dart';
+import '../background/notifications.dart';
 import '../data/app_state.dart';
 import '../data/defaults.dart';
 import 'app_scope.dart';
@@ -264,6 +265,25 @@ class _NotifyCardState extends State<_NotifyCard> {
               ),
             ),
           ],
+          if (s.notifyEnabled && !kIsWeb && Platform.isAndroid)
+            FutureBuilder<bool>(
+              future: Notifier.batteryUnrestricted(),
+              builder: (context, snap) => snap.data != false
+                  ? const SizedBox()
+                  : ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.battery_alert_rounded, color: Color(0xFFFFB347)),
+                      title: const Text('Oszczędzanie baterii może ubijać sprawdzanie'),
+                      subtitle: Text('Zezwól apce działać w tle, żeby codzienny skan dochodził.', style: small),
+                      trailing: TextButton(
+                        onPressed: () async {
+                          await Notifier.requestBatteryUnrestricted();
+                          if (mounted) setState(() {});
+                        },
+                        child: const Text('Zezwól'),
+                      ),
+                    ),
+            ),
           if (windows) ...[
             SwitchListTile(
               contentPadding: EdgeInsets.zero,

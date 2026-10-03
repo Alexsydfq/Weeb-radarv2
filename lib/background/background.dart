@@ -78,6 +78,11 @@ class BackgroundChecks {
       }
       if (state.notifyEnabled) {
         await Notifier.requestPermission();
+        // Raz pytamy o zwolnienie z oszczędzania baterii; potem już tylko z ustawień.
+        if (prefs.getBool('notify.batteryAsked') != true && !await Notifier.batteryUnrestricted()) {
+          await prefs.setBool('notify.batteryAsked', true);
+          await Notifier.requestBatteryUnrestricted();
+        }
         await Workmanager().registerPeriodicTask(
           _task,
           _task,

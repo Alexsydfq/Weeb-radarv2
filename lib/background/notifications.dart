@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../data/news.dart';
@@ -37,6 +38,27 @@ class Notifier {
       onDidReceiveNotificationResponse: (_) => onTap?.call(),
     );
     _ready = true;
+  }
+
+  static const _battery = MethodChannel('weeb_radar/battery');
+
+  /// Android: czy apka jest zwolniona z oszczędzania baterii
+  /// (wtedy codzienne sprawdzanie w tle nie jest ubijane).
+  static Future<bool> batteryUnrestricted() async {
+    if (kIsWeb || !Platform.isAndroid) return true;
+    try {
+      return await _battery.invokeMethod<bool>('isIgnoring') ?? true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /// Android: systemowe okienko „Zezwolić na działanie w tle?”.
+  static Future<void> requestBatteryUnrestricted() async {
+    if (kIsWeb || !Platform.isAndroid) return;
+    try {
+      await _battery.invokeMethod<void>('request');
+    } catch (_) {}
   }
 
   /// Android 13+: pytamy o zgodę na powiadomienia.
