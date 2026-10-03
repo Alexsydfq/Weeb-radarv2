@@ -27,7 +27,7 @@ class _CalendarPageState extends State<CalendarPage> {
     final today = todayDate();
 
     final entries = <(DateTime, RadarEvent, EventStop?)>[];
-    for (final e in s.upcoming) {
+    for (final e in s.upcomingEurope) {
       if (_onlyMine && !s.isForYou(e)) continue;
       if (e.stops.isEmpty) {
         entries.add((e.start, e, null));

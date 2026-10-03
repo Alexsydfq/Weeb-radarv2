@@ -4,6 +4,7 @@ import 'artists_page.dart';
 import 'background.dart';
 import 'calendar_page.dart';
 import 'favorites_page.dart';
+import 'japan_page.dart';
 import 'radar_page.dart';
 import 'settings_page.dart';
 import 'sources_page.dart';
@@ -28,12 +29,40 @@ class _ShellState extends State<Shell> {
 
   static const _dests = [
     _Dest('Radar', Icons.radar_outlined, Icons.radar, RadarPage()),
+    _Dest('Japonia', Icons.temple_buddhist_outlined, Icons.temple_buddhist, JapanPage()),
     _Dest('Kalendarz', Icons.calendar_month_outlined, Icons.calendar_month, CalendarPage()),
     _Dest('Plany', Icons.event_available_outlined, Icons.event_available_rounded, FavoritesPage()),
     _Dest('Artyści', Icons.headphones_outlined, Icons.headphones, ArtistsPage()),
     _Dest('Źródła', Icons.travel_explore_outlined, Icons.travel_explore, SourcesPage()),
     _Dest('Wygląd', Icons.palette_outlined, Icons.palette, SettingsPage()),
   ];
+
+  /// Na telefonie mieści się tyle zakładek; reszta jest pod „Więcej”.
+  static const _bar = 4;
+
+  void _more(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (c) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = _bar; i < _dests.length; i++)
+              ListTile(
+                leading: Icon(i == _index ? _dests[i].selected : _dests[i].icon),
+                title: Text(_dests[i].label),
+                selected: i == _index,
+                onTap: () {
+                  Navigator.pop(c);
+                  setState(() => _index = i);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,16 +106,21 @@ class _ShellState extends State<Shell> {
         bottomNavigationBar: wide
             ? null
             : NavigationBar(
-                selectedIndex: _index,
-                onDestinationSelected: (i) => setState(() => _index = i),
+                selectedIndex: _index < _bar ? _index : _bar,
+                onDestinationSelected: (i) => i < _bar ? setState(() => _index = i) : _more(context),
                 labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
                 destinations: [
-                  for (final d in _dests)
+                  for (final d in _dests.take(_bar))
                     NavigationDestination(
                       icon: Icon(d.icon),
                       selectedIcon: Icon(d.selected),
                       label: d.label,
                     ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.more_horiz_rounded),
+                    selectedIcon: const Icon(Icons.more_horiz_rounded),
+                    label: _index < _bar ? 'Więcej' : _dests[_index].label,
+                  ),
                 ],
               ),
       ),

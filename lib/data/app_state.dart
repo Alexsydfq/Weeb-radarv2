@@ -57,6 +57,7 @@ class AppState extends ChangeNotifier {
 
   /// Co ile godzin sprawdzać nowości w tle.
   int notifyHours = 24;
+  bool notifyJapan = true;
 
   /// Windows: zamknięcie okna chowa apkę do zasobnika, żeby dalej sprawdzała.
   bool trayOnClose = true;
@@ -128,6 +129,12 @@ class AppState extends ChangeNotifier {
   List<RadarEvent> get upcoming =>
       events.where((e) => !e.isOver).toList()..sort((a, b) => a.nextDate.compareTo(b.nextDate));
 
+  /// Radar i kalendarz: Europa (Japonia ma swoją zakładkę).
+  List<RadarEvent> get upcomingEurope => upcoming.where((e) => !e.isJapan).toList();
+
+  /// Zakładka Japonia: do śledzenia, nawet jeśli szybko tam nie pojedziesz.
+  List<RadarEvent> get upcomingJapan => upcoming.where((e) => e.isJapan).toList();
+
   // ======================================================================
   // Wczytywanie
   // ======================================================================
@@ -193,6 +200,7 @@ class AppState extends ChangeNotifier {
     notifyEnabled = p.getBool('notify.enabled') ?? notifyEnabled;
     notifySpotifyOnly = p.getBool('notify.spotifyOnly') ?? notifySpotifyOnly;
     notifyHours = p.getInt('notify.hours') ?? notifyHours;
+    notifyJapan = p.getBool('notify.japan') ?? notifyJapan;
     notified = p.getStringList('notify.seen')?.toSet();
     trayOnClose = p.getBool('win.tray') ?? trayOnClose;
     autostart = p.getBool('win.autostart') ?? autostart;
@@ -459,8 +467,9 @@ class AppState extends ChangeNotifier {
   /// Wołane po zmianie ustawień powiadomień (planowanie w tle, autostart itp.).
   VoidCallback? onNotifySettingsChanged;
 
-  void setNotify({bool? enabled, bool? spotifyOnly, int? hours, bool? tray, bool? startup}) {
+  void setNotify({bool? enabled, bool? spotifyOnly, int? hours, bool? tray, bool? startup, bool? japan}) {
     if (enabled != null) _prefs.setBool('notify.enabled', notifyEnabled = enabled);
+    if (japan != null) _prefs.setBool('notify.japan', notifyJapan = japan);
     if (spotifyOnly != null) _prefs.setBool('notify.spotifyOnly', notifySpotifyOnly = spotifyOnly);
     if (hours != null) _prefs.setInt('notify.hours', notifyHours = hours);
     if (tray != null) _prefs.setBool('win.tray', trayOnClose = tray);

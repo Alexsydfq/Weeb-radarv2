@@ -39,7 +39,7 @@ class _RadarPageState extends State<RadarPage> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final theme = Theme.of(context);
-    final upcoming = s.upcoming;
+    final upcoming = s.upcomingEurope;
     final q = _search.text.trim().toLowerCase();
 
     var list = upcoming.where((e) {

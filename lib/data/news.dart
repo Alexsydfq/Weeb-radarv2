@@ -30,6 +30,7 @@ Future<List<NewsItem>> collectNews(AppState s, List<RadarEvent> events) async {
   final news = <NewsItem>[];
   for (final e in events) {
     if (e.isOver || s.hidden.contains(e.id)) continue;
+    if (e.isJapan && !s.notifyJapan) continue;
     final plan = s.planOf(e.id);
     if (plan == Plan.notGoing) continue;
     final rank = s.spotifyRank(e);

@@ -307,6 +307,8 @@ const defaultArtists = <String>[
   'P丸様｡',
   'Ui',
   'OK Glass',
+  // Japonia: imiona VTuberów bywają podawane w odwrotnej kolejności
+  'Natori Sana',
 ];
 
 /// Festiwale, na które Awex jeździ. Daty z musicfestivalwizard.com (3.10.2026),

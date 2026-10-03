@@ -250,6 +250,14 @@ class _NotifyCardState extends State<_NotifyCard> {
             const SizedBox(height: 6),
             Text('Plus zmiany (line-up, bilety, odwołania) w eventach z planem, gwiazdką albo Twoim artystą.',
                 style: small),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Text('🇯🇵', style: TextStyle(fontSize: 22)),
+              title: const Text('Też Japonia'),
+              subtitle: Text('Nowości z zakładki Japonia, według tych samych zasad.', style: small),
+              value: s.notifyJapan,
+              onChanged: (v) => s.setNotify(japan: v),
+            ),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.schedule_rounded),

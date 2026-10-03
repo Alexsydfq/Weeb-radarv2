@@ -81,6 +81,9 @@ class RadarEvent {
   /// Przystanek trasy, który sam wybrałeś („jadę tutaj”).
   final EventStop? chosen;
 
+  /// Region z feedu: "JP" dla wydarzeń w Japonii (osobna zakładka), inaczej Europa.
+  final String? region;
+
   const RadarEvent({
     required this.id,
     required this.artist,
@@ -102,7 +105,12 @@ class RadarEvent {
     this.about,
     this.hits = const [],
     this.chosen,
+    this.region,
   });
+
+  /// Wydarzenie w Japonii: do śledzenia, nie do Radaru Europy.
+  bool get isJapan =>
+      region?.toUpperCase() == 'JP' || (stops.isNotEmpty && stops.every((s) => s.cc.toUpperCase() == 'JP'));
 
   /// Ten sam event z wybranym przystankiem (albo bez wyboru).
   RadarEvent withChosen(EventStop? stop) => RadarEvent(
@@ -126,6 +134,7 @@ class RadarEvent {
         about: about,
         hits: hits,
         chosen: stop,
+        region: region,
       );
 
   factory RadarEvent.fromJson(Map<String, dynamic> j,
@@ -169,6 +178,7 @@ class RadarEvent {
           .map((x) => x.toString().trim())
           .where((x) => x.isNotEmpty)
           .toList(),
+      region: _nonEmpty(j['region']),
     );
   }
 
@@ -191,6 +201,7 @@ class RadarEvent {
         if (changeNote != null) 'changeNote': changeNote,
         if (about != null) 'about': about,
         if (hits.isNotEmpty) 'hits': hits,
+        if (region != null) 'region': region,
       };
 
   String get displayTitle => title.trim().isEmpty ? artist : title;

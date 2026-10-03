@@ -62,4 +62,26 @@ void main() {
     expect(decodeNotified(raw), {'a', 'b'});
     expect(decodeNotified(encodeEntries({})), isEmpty);
   });
+
+  test('Japonia: osobno od Europy i z własnym przełącznikiem powiadomień', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final s = AppState(prefs)..loadSettings();
+    final jp = RadarEvent.fromJson({
+      'id': 'bakutan', 'artist': 'DECO*27', 'kind': 'koncert', 'dateStart': '2030-03-14',
+      'stops': [{'date': '2030-03-14', 'city': 'Tokio', 'cc': 'JP'}],
+    });
+    expect(jp.isJapan, isTrue);
+    expect(ev('x', 'DECO*27').isJapan, isFalse);
+    expect(RadarEvent.fromJson({'id': 'r', 'artist': 'a', 'region': 'JP', 'dateStart': '2030-01-01'}).isJapan, isTrue);
+    s.setNotify(japan: false);
+    expect(await collectNews(s, [jp]), isEmpty);
+    s.setNotify(japan: true);
+    // Ta sama runda już go zapamiętała, więc nowy event z Japonii:
+    final jp2 = RadarEvent.fromJson({
+      'id': 'bakutan2', 'artist': 'DECO*27', 'kind': 'koncert', 'dateStart': '2030-03-15',
+      'stops': [{'date': '2030-03-15', 'city': 'Osaka', 'cc': 'JP'}],
+    });
+    expect((await collectNews(s, [jp2])).map((n) => n.event.id), ['bakutan2']);
+  });
 }
