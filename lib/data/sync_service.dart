@@ -8,19 +8,25 @@ enum Plan { going, maybe, interested, notGoing }
 /// Twoje decyzje dla jednego eventu. `at` to czas ostatniej zmiany
 /// (ms od epoki): przy łączeniu telefonu z komputerem wygrywa nowsza zmiana.
 class PlanEntry {
-  const PlanEntry({this.plan, this.fav = false, this.hidden = false, required this.at});
+  const PlanEntry({this.plan, this.fav = false, this.hidden = false, this.stop, required this.at});
 
   final Plan? plan;
   final bool fav;
   final bool hidden;
+
+  /// Wybrany przystanek trasy (EventStop.key), np. Düsseldorf zamiast Londynu.
+  final String? stop;
   final int at;
 
-  bool get isEmpty => plan == null && !fav && !hidden;
+  bool get isEmpty => plan == null && !fav && !hidden && stop == null;
 
-  PlanEntry copyWith({Plan? Function()? plan, bool? fav, bool? hidden, required int at}) => PlanEntry(
+  PlanEntry copyWith(
+          {Plan? Function()? plan, bool? fav, bool? hidden, String? Function()? stop, required int at}) =>
+      PlanEntry(
         plan: plan == null ? this.plan : plan(),
         fav: fav ?? this.fav,
         hidden: hidden ?? this.hidden,
+        stop: stop == null ? this.stop : stop(),
         at: at,
       );
 
@@ -28,6 +34,7 @@ class PlanEntry {
         plan: Plan.values.where((p) => p.name == j['plan']).firstOrNull,
         fav: j['fav'] == true,
         hidden: j['hidden'] == true,
+        stop: j['stop'] is String ? j['stop'] as String : null,
         at: (j['at'] as num?)?.toInt() ?? 0,
       );
 
@@ -35,15 +42,21 @@ class PlanEntry {
         if (plan != null) 'plan': plan!.name,
         if (fav) 'fav': true,
         if (hidden) 'hidden': true,
+        if (stop != null) 'stop': stop,
         'at': at,
       };
 
   @override
   bool operator ==(Object other) =>
-      other is PlanEntry && other.plan == plan && other.fav == fav && other.hidden == hidden && other.at == at;
+      other is PlanEntry &&
+      other.plan == plan &&
+      other.fav == fav &&
+      other.hidden == hidden &&
+      other.stop == stop &&
+      other.at == at;
 
   @override
-  int get hashCode => Object.hash(plan, fav, hidden, at);
+  int get hashCode => Object.hash(plan, fav, hidden, stop, at);
 }
 
 /// Łączy dwa zestawy decyzji: dla każdego eventu wygrywa nowsza zmiana.

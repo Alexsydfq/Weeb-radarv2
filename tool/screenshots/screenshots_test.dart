@@ -41,7 +41,7 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'plans.entries': jsonEncode({
         'entries': {
-          '2026-11-hatsune-miku-expo-europe': {'plan': 'going', 'fav': true, 'at': 1},
+          '2026-11-hatsune-miku-expo-europe': {'plan': 'going', 'fav': true, 'stop': '2026-11-20|Düsseldorf', 'at': 1},
           'fest-primavera-2027': {'plan': 'going', 'at': 1},
           '2026-10-yoko-kanno-lucca-milan': {'plan': 'maybe', 'at': 1},
           'fest-pohoda-2027': {'plan': 'interested', 'at': 1},
@@ -62,6 +62,9 @@ void main() {
         ];
         e['updatedAt'] = '2026-10-01';
         e['changeNote'] = 'Doszedł koncert w Lizbonie';
+        e['about'] = 'Wirtualna piosenkarka Vocaloid od Crypton Future Media. Znasz ją z tysięcy piosenek producentów '
+            'takich jak DECO*27, ryo (supercell) czy wowaka, z Project SEKAI i z Magical Mirai.';
+        e['hits'] = ['Ievan Polkka', 'World is Mine', 'Rolling Girl', 'Senbonzakura', 'Vampire'];
       }
     }
     final feed = jsonEncode(raw);

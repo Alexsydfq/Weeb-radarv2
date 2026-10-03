@@ -133,7 +133,8 @@ class EventCard extends StatelessWidget {
     }
     final flags = e.stops.map((st) => flagOf(st.cc)).toSet().join(' ');
     final n = next ?? e.stops.first;
-    return '$flags\n${e.stops.length} przystanków · następny: ${n.city} ${formatDay(n.date)}';
+    final label = e.chosen != null && n == e.chosen ? '✈ jedziesz' : 'następny';
+    return '$flags\n${e.stops.length} przystanków · $label: ${n.city} ${formatDay(n.date)}';
   }
 }
 

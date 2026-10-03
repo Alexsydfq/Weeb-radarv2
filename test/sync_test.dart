@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:weeb_radar/data/app_state.dart';
 import 'package:weeb_radar/data/feed_service.dart';
 import 'package:weeb_radar/data/sync_service.dart';
+import 'package:weeb_radar/models/event.dart';
 
 /// Udawany GitHub z gistami w pamięci.
 class FakeGitHub {
@@ -136,6 +137,35 @@ void main() {
     });
     expect(again.artists, isNot(contains('Nilfruits')));
     expect(again.artists.length, kept.length);
+  });
+
+  test('wybór miasta na trasie: zmienia termin i synchronizuje się', () async {
+    final gh = FakeGitHub();
+    final pc = await device(gh, prefs: {'sync.token': 'good'});
+    final tour = RadarEvent.fromJson({
+      'id': 'miku-expo', 'artist': 'Hatsune Miku', 'kind': 'trasa', 'dateStart': '2030-04-01',
+      'about': 'Wirtualna piosenkarka.', 'hits': ['World is Mine'],
+      'stops': [
+        {'date': '2030-04-01', 'city': 'Londyn', 'cc': 'UK'},
+        {'date': '2030-04-09', 'city': 'Düsseldorf', 'cc': 'DE'},
+      ],
+    });
+    expect(tour.about, 'Wirtualna piosenkarka.');
+    expect(tour.hits, ['World is Mine']);
+    pc.saveManualEvent(tour);
+    expect(pc.events.firstWhere((e) => e.id == 'miku-expo').nextStop!.city, 'Londyn');
+    pc.chooseStop('miku-expo', tour.stops[1]);
+    final chosen = pc.events.firstWhere((e) => e.id == 'miku-expo');
+    expect(chosen.nextStop!.city, 'Düsseldorf');
+    expect(chosen.nextDate, DateTime(2030, 4, 9));
+    await pc.syncNow();
+
+    final phone = await device(gh, prefs: {'sync.token': 'good'});
+    await phone.syncNow();
+    expect(phone.entries['miku-expo']!.stop, tour.stops[1].key);
+
+    pc.chooseStop('miku-expo', tour.stops[1]);
+    expect(pc.events.firstWhere((e) => e.id == 'miku-expo').chosen, isNull, reason: 'drugie kliknięcie zdejmuje wybór');
   });
 
   test('zły token daje czytelny błąd i nie psuje lokalnych planów', () async {

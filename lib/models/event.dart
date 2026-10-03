@@ -19,6 +19,9 @@ class EventStop {
         venue: (j['venue'] ?? '').toString(),
       );
 
+  /// Klucz przystanku do zapamiętania wyboru („jadę tutaj”).
+  String get key => '${_fmt(date)}|$city';
+
   Map<String, dynamic> toJson() => {
         'cc': cc,
         'city': city,
@@ -69,6 +72,15 @@ class RadarEvent {
   final DateTime? updatedAt;
   final String? changeNote;
 
+  /// Kto to i skąd możesz go znać (anime, gra, vocaloid…).
+  final String? about;
+
+  /// Najpopularniejsze kawałki artysty (albo gwiazd festiwalu).
+  final List<String> hits;
+
+  /// Przystanek trasy, który sam wybrałeś („jadę tutaj”).
+  final EventStop? chosen;
+
   const RadarEvent({
     required this.id,
     required this.artist,
@@ -87,7 +99,34 @@ class RadarEvent {
     this.facts = const [],
     this.updatedAt,
     this.changeNote,
+    this.about,
+    this.hits = const [],
+    this.chosen,
   });
+
+  /// Ten sam event z wybranym przystankiem (albo bez wyboru).
+  RadarEvent withChosen(EventStop? stop) => RadarEvent(
+        id: id,
+        artist: artist,
+        title: title,
+        kind: kind,
+        tier: tier,
+        start: start,
+        end: end,
+        note: note,
+        stops: stops,
+        url: url,
+        tickets: tickets,
+        foundAt: foundAt,
+        origin: origin,
+        lineup: lineup,
+        facts: facts,
+        updatedAt: updatedAt,
+        changeNote: changeNote,
+        about: about,
+        hits: hits,
+        chosen: stop,
+      );
 
   factory RadarEvent.fromJson(Map<String, dynamic> j,
       {EventOrigin origin = EventOrigin.feed}) {
@@ -125,6 +164,11 @@ class RadarEvent {
       ],
       updatedAt: _parseDate(j['updatedAt']),
       changeNote: _nonEmpty(j['changeNote']),
+      about: _nonEmpty(j['about']),
+      hits: ((j['hits'] as List?) ?? const [])
+          .map((x) => x.toString().trim())
+          .where((x) => x.isNotEmpty)
+          .toList(),
     );
   }
 
@@ -145,6 +189,8 @@ class RadarEvent {
         if (facts.isNotEmpty) 'facts': facts.map((f) => f.toJson()).toList(),
         if (updatedAt != null) 'updatedAt': _fmt(updatedAt!),
         if (changeNote != null) 'changeNote': changeNote,
+        if (about != null) 'about': about,
+        if (hits.isNotEmpty) 'hits': hits,
       };
 
   String get displayTitle => title.trim().isEmpty ? artist : title;
@@ -156,9 +202,11 @@ class RadarEvent {
     return end.isBefore(today);
   }
 
-  /// Najbliższy przystanek, który jeszcze się nie odbył.
+  /// Twój przystanek (jeśli wybrałeś i jeszcze się nie odbył),
+  /// inaczej najbliższy, który jeszcze się nie odbył.
   EventStop? get nextStop {
     final today = todayDate();
+    if (chosen != null && !chosen!.date.isBefore(today)) return chosen;
     for (final s in stops) {
       if (!s.date.isBefore(today)) return s;
     }
@@ -169,7 +217,7 @@ class RadarEvent {
   DateTime get nextDate => nextStop?.date ?? start;
 
   /// Tekst, w którym szukamy nazw Twoich artystów.
-  String get searchable => '$artist $title $note ${lineup.join(' · ')}'.toLowerCase();
+  String get searchable => '$artist $title $note ${lineup.join(' · ')} ${about ?? ''}'.toLowerCase();
 }
 
 /// Dzisiejsza data bez godziny.

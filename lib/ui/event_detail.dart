@@ -16,21 +16,25 @@ class EventDetailPage extends StatelessWidget {
   final RadarEvent event;
 
   static Route<void> route(RadarEvent e) => PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 320),
-        pageBuilder: (_, _, _) => EventDetailPage(event: e),
-        transitionsBuilder: (_, a, _, child) => FadeTransition(
-          opacity: a,
-          child: SlideTransition(
-            position: Tween(begin: const Offset(0, 0.04), end: Offset.zero)
-                .animate(CurvedAnimation(parent: a, curve: Curves.easeOutCubic)),
-            child: child,
-          ),
-        ),
-      );
+    transitionDuration: const Duration(milliseconds: 320),
+    pageBuilder: (_, _, _) => EventDetailPage(event: e),
+    transitionsBuilder: (_, a, _, child) => FadeTransition(
+      opacity: a,
+      child: SlideTransition(
+        position: Tween(
+          begin: const Offset(0, 0.04),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(parent: a, curve: Curves.easeOutCubic)),
+        child: child,
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    // Bierzemy świeżą wersję eventu, żeby wybór miasta od razu było widać.
+    final event = s.events.where((x) => x.id == this.event.id).firstOrNull ?? this.event;
     final theme = Theme.of(context);
     final fav = s.favourites.contains(event.id);
     final matched = s.matchedArtists(event);
@@ -44,8 +48,10 @@ class EventDetailPage extends StatelessWidget {
           actions: [
             IconButton(
               tooltip: fav ? 'Usuń z ulubionych' : 'Dodaj do ulubionych',
-              icon: Icon(fav ? Icons.star_rounded : Icons.star_outline_rounded,
-                  color: fav ? const Color(0xFFFFD23F) : null),
+              icon: Icon(
+                fav ? Icons.star_rounded : Icons.star_outline_rounded,
+                color: fav ? const Color(0xFFFFD23F) : null,
+              ),
               onPressed: () => s.toggleFavourite(event.id),
             ),
             PopupMenuButton<String>(
@@ -53,8 +59,7 @@ class EventDetailPage extends StatelessWidget {
                 switch (v) {
                   case 'copy':
                     Clipboard.setData(ClipboardData(text: _shareText()));
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(const SnackBar(content: Text('Skopiowano opis eventu')));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Skopiowano opis eventu')));
                   case 'hide':
                     s.hide(event.id);
                     Navigator.pop(context);
@@ -88,29 +93,56 @@ class EventDetailPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Wrap(spacing: 6, runSpacing: 6, children: [
-                        if (matched.isNotEmpty)
-                          Pill(spotifyLabel(s.spotifyRank(event)), color: spotifyGreen, icon: Icons.headphones_rounded),
-                        Pill(kindLabels[event.kind] ?? event.kind, color: kc, icon: kindIcon(event.kind)),
-                        Pill(countdown(event.nextDate), icon: Icons.timer_outlined),
-                        Pill('dopasowanie ${event.tier}/3', icon: Icons.tune_rounded),
-                        if (s.isNew(event)) const Pill('NOWE', color: Color(0xFFFF5370)),
-                      ]),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          if (matched.isNotEmpty)
+                            Pill(
+                              spotifyLabel(s.spotifyRank(event)),
+                              color: spotifyGreen,
+                              icon: Icons.headphones_rounded,
+                            ),
+                          Pill(kindLabels[event.kind] ?? event.kind, color: kc, icon: kindIcon(event.kind)),
+                          Pill(countdown(event.nextDate), icon: Icons.timer_outlined),
+                          Pill('dopasowanie ${event.tier}/3', icon: Icons.tune_rounded),
+                          if (s.isNew(event)) const Pill('NOWE', color: Color(0xFFFF5370)),
+                        ],
+                      ),
                       const SizedBox(height: 14),
-                      Text(event.artist,
-                          style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900)),
+                      Text(event.artist, style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900)),
                       if (event.title.isNotEmpty && event.title != event.artist)
                         Text(event.title, style: theme.textTheme.titleMedium),
                       const SizedBox(height: 8),
-                      Text(formatRange(event),
-                          style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                      Text(
+                        formatRange(event),
+                        style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                      if (event.chosen != null) ...[
+                        const SizedBox(height: 6),
+                        Row(children: [
+                          Icon(Icons.flight_takeoff_rounded, size: 20, color: kc),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Jedziesz: ${flagOf(event.chosen!.cc)} ${event.chosen!.city}, ${formatLong(event.chosen!.date)}',
+                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                        ]),
+                      ],
                       if (matched.isNotEmpty || keywords.isNotEmpty) ...[
                         const SizedBox(height: 12),
-                        Wrap(spacing: 6, runSpacing: 6, children: [
-                          for (final a in matched.take(6)) Pill(a, color: spotifyGreen, icon: Icons.headphones_rounded),
-                          if (matched.length > 6) Pill('+${matched.length - 6}', color: spotifyGreen),
-                          for (final k in keywords) Pill(k, icon: Icons.tag_rounded),
-                        ]),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            for (final a in matched.take(6))
+                              Pill(a, color: spotifyGreen, icon: Icons.headphones_rounded),
+                            if (matched.length > 6) Pill('+${matched.length - 6}', color: spotifyGreen),
+                            for (final k in keywords) Pill(k, icon: Icons.tag_rounded),
+                          ],
+                        ),
                       ],
                     ],
                   ),
@@ -151,21 +183,57 @@ class EventDetailPage extends StatelessWidget {
                   const SizedBox(height: 12),
                   Glass(
                     highlight: const Color(0xFFFFB13B),
-                    child: Row(children: [
-                      const Icon(Icons.campaign_rounded, color: Color(0xFFFFB13B)),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Zmiana${event.updatedAt != null ? ' (${formatDay(event.updatedAt!)})' : ''}: ${event.changeNote}',
-                          style: theme.textTheme.bodyMedium,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.campaign_rounded, color: Color(0xFFFFB13B)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Zmiana${event.updatedAt != null ? ' (${formatDay(event.updatedAt!)})' : ''}: ${event.changeNote}',
+                            style: theme.textTheme.bodyMedium,
+                          ),
                         ),
-                      ),
-                    ]),
+                      ],
+                    ),
+                  ),
+                ],
+                if (event.about != null || event.hits.isNotEmpty) ...[
+                  const SectionTitle('Kto to?'),
+                  Glass(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (event.about != null) SelectableText(event.about!, style: theme.textTheme.bodyLarge),
+                        if (event.hits.isNotEmpty) ...[
+                          if (event.about != null) const SizedBox(height: 12),
+                          Text(
+                            'Najpopularniejsze kawałki',
+                            style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final h in event.hits)
+                                ActionChip(
+                                  avatar: const Icon(Icons.play_circle_fill_rounded, color: spotifyGreen),
+                                  label: Text(h),
+                                  tooltip: 'Posłuchaj w Spotify',
+                                  onPressed: () => openLink(context, spotifySearchUrl(event, h)),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ],
                 if (event.lineup.isNotEmpty) ...[
                   SectionTitle(
-                    event.kind == 'konwent' ? 'Goście muzyczni (${event.lineup.length})' : 'Line-up (${event.lineup.length})',
+                    event.kind == 'konwent'
+                        ? 'Goście muzyczni (${event.lineup.length})'
+                        : 'Line-up (${event.lineup.length})',
                   ),
                   Glass(child: _Lineup(event: event)),
                 ],
@@ -184,9 +252,12 @@ class EventDetailPage extends StatelessWidget {
                               children: [
                                 SizedBox(
                                   width: 120,
-                                  child: Text(f.label,
-                                      style: theme.textTheme.labelLarge
-                                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                                  child: Text(
+                                    f.label,
+                                    style: theme.textTheme.labelLarge?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
                                 ),
                                 Expanded(child: SelectableText(f.value, style: theme.textTheme.bodyLarge)),
                               ],
@@ -203,6 +274,16 @@ class EventDetailPage extends StatelessWidget {
                 ],
                 if (event.stops.isNotEmpty) ...[
                   SectionTitle(event.stops.length > 1 ? 'Przystanki (${event.stops.length})' : 'Gdzie'),
+                  if (event.stops.length > 1)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+                      child: Text(
+                        event.chosen == null
+                            ? 'Kliknij miasto, do którego jedziesz: odliczanie, kalendarz i karta pokażą ten termin.'
+                            : 'Jedziesz do: ${event.chosen!.city}. Kliknij jeszcze raz, żeby zdjąć wybór.',
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ),
                   Glass(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Column(
@@ -215,6 +296,10 @@ class EventDetailPage extends StatelessWidget {
                             past: st.date.isBefore(today),
                             home: s.isHome(st.cc),
                             color: kc,
+                            chosen: event.chosen?.key == st.key,
+                            onTap: event.stops.length > 1 && !st.date.isBefore(today)
+                                ? () => s.chooseStop(event.id, st)
+                                : null,
                           ),
                       ],
                     ),
@@ -276,11 +361,14 @@ class _StopTile extends StatelessWidget {
     required this.past,
     required this.home,
     required this.color,
+    this.chosen = false,
+    this.onTap,
   });
 
   final EventStop stop;
-  final bool first, last, past, home;
+  final bool first, last, past, home, chosen;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -288,51 +376,68 @@ class _StopTile extends StatelessWidget {
     final dim = past ? 0.4 : 1.0;
     return Opacity(
       opacity: dim,
-      child: IntrinsicHeight(
-        child: Row(
-          children: [
-            const SizedBox(width: 18),
-            SizedBox(
-              width: 20,
-              child: Column(
-                children: [
-                  Expanded(child: Container(width: 2, color: first ? Colors.transparent : color.withValues(alpha: 0.5))),
-                  Container(
-                    width: home ? 14 : 10,
-                    height: home ? 14 : 10,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: color,
-                      boxShadow: home ? [BoxShadow(color: color, blurRadius: 10)] : null,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          color: chosen ? color.withValues(alpha: 0.16) : null,
+          child: IntrinsicHeight(
+            child: Row(
+              children: [
+                const SizedBox(width: 18),
+                SizedBox(
+                  width: 20,
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Container(width: 2, color: first ? Colors.transparent : color.withValues(alpha: 0.5)),
+                      ),
+                      Container(
+                        width: home ? 14 : 10,
+                        height: home ? 14 : 10,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: color,
+                          boxShadow: home ? [BoxShadow(color: color, blurRadius: 10)] : null,
+                        ),
+                      ),
+                      Expanded(
+                        child: Container(width: 2, color: last ? Colors.transparent : color.withValues(alpha: 0.5)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${flagOf(stop.cc)}  ${stop.city.isEmpty ? countryName(stop.cc) : stop.city}',
+                          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        Text(
+                          [formatLong(stop.date), if (stop.venue.isNotEmpty) stop.venue].join(' · '),
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
                     ),
                   ),
-                  Expanded(child: Container(width: 2, color: last ? Colors.transparent : color.withValues(alpha: 0.5))),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('${flagOf(stop.cc)}  ${stop.city.isEmpty ? countryName(stop.cc) : stop.city}',
-                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
-                    Text(
-                      [formatLong(stop.date), if (stop.venue.isNotEmpty) stop.venue].join(' · '),
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
                 ),
-              ),
+                if (chosen)
+                  const Padding(
+                    padding: EdgeInsets.only(right: 8),
+                    child: Pill('jadę tu', icon: Icons.flight_takeoff_rounded),
+                  ),
+                if (home)
+                  const Padding(
+                    padding: EdgeInsets.only(right: 14),
+                    child: Pill('u Ciebie', icon: Icons.home_rounded),
+                  ),
+              ],
             ),
-            if (home)
-              const Padding(
-                padding: EdgeInsets.only(right: 14),
-                child: Pill('u Ciebie', icon: Icons.home_rounded),
-              ),
-          ],
+          ),
         ),
       ),
     );
@@ -357,14 +462,15 @@ class _LineupState extends State<_Lineup> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final theme = Theme.of(context);
-    final entries = [
-      for (final (i, name) in widget.event.lineup.indexed)
-        (name: name, mine: s.artistsIn(name).isNotEmpty, rank: s.rankOfEntry(name), order: i),
-    ]..sort((a, b) {
-        if (a.mine != b.mine) return a.mine ? -1 : 1;
-        if (a.mine) return (a.rank ?? 9999).compareTo(b.rank ?? 9999);
-        return a.order.compareTo(b.order);
-      });
+    final entries =
+        [
+          for (final (i, name) in widget.event.lineup.indexed)
+            (name: name, mine: s.artistsIn(name).isNotEmpty, rank: s.rankOfEntry(name), order: i),
+        ]..sort((a, b) {
+          if (a.mine != b.mine) return a.mine ? -1 : 1;
+          if (a.mine) return (a.rank ?? 9999).compareTo(b.rank ?? 9999);
+          return a.order.compareTo(b.order);
+        });
     final mine = entries.where((e) => e.mine).length;
     final shown = _all ? entries : entries.take(_collapsed).toList();
     return Column(
@@ -384,8 +490,11 @@ class _LineupState extends State<_Lineup> {
           children: [
             for (final e in shown)
               e.mine
-                  ? Pill(e.rank != null ? '${e.name}  #${e.rank}' : e.name,
-                      color: spotifyGreen, icon: Icons.headphones_rounded)
+                  ? Pill(
+                      e.rank != null ? '${e.name}  #${e.rank}' : e.name,
+                      color: spotifyGreen,
+                      icon: Icons.headphones_rounded,
+                    )
                   : Pill(e.name, color: theme.colorScheme.onSurfaceVariant),
           ],
         ),

@@ -106,7 +106,17 @@ class AppState extends ChangeNotifier {
       all[e.id] = e;
     }
     final h = hidden;
-    return all.values.where((e) => !h.contains(e.id)).toList();
+    return [
+      for (final e in all.values)
+        if (!h.contains(e.id)) _withChosenStop(e),
+    ];
+  }
+
+  RadarEvent _withChosenStop(RadarEvent e) {
+    final key = entries[e.id]?.stop;
+    if (key == null || e.stops.length < 2) return e;
+    final st = e.stops.where((x) => x.key == key).firstOrNull;
+    return st == null ? e : e.withChosen(st);
   }
 
   static bool _sameFestival(RadarEvent curated, RadarEvent other) {
@@ -430,6 +440,10 @@ class AppState extends ChangeNotifier {
   /// Ustawia plan; ten sam plan drugi raz go zdejmuje.
   void setPlan(String id, Plan? plan) =>
       _edit(id, (e) => e.copyWith(plan: () => e.plan == plan ? null : plan, at: e.at));
+
+  /// Wybór miasta na trasie; drugie kliknięcie w to samo miasto zdejmuje wybór.
+  void chooseStop(String id, EventStop stop) =>
+      _edit(id, (e) => e.copyWith(stop: () => e.stop == stop.key ? null : stop.key, at: e.at));
 
   void hide(String id) => _edit(id, (e) => e.copyWith(hidden: true, at: e.at));
 

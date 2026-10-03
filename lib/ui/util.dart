@@ -89,3 +89,11 @@ Color planColor(Plan p) => switch (p) {
 const spotifyGreen = Color(0xFF1ED760);
 
 String spotifyLabel(int? rank) => rank == null ? 'Słuchasz' : 'Spotify #$rank';
+
+
+/// Wyszukiwanie kawałka w Spotify. Przy koncertach dokładamy nazwę artysty,
+/// przy festiwalach i konwentach hit ma już artystę w treści.
+String spotifySearchUrl(RadarEvent e, String hit) {
+  final q = (e.kind == 'festiwal' || e.kind == 'konwent' || e.kind == 'rave') ? hit : '${e.artist} $hit';
+  return 'https://open.spotify.com/search/${Uri.encodeComponent(q)}';
+}
