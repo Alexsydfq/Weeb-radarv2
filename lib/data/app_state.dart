@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/event.dart';
 import 'defaults.dart';
 import 'feed_service.dart';
+import 'sync_service.dart';
 
 /// Formaty tła, które Flutter dekoduje na Androidzie i Windowsie.
 /// GIF i animowany WebP są odtwarzane w pętli.
@@ -20,10 +21,13 @@ enum BackgroundFit { cover, contain, tile }
 
 /// Cały stan aplikacji: ustawienia, Twoi artyści, ulubione i eventy.
 class AppState extends ChangeNotifier {
-  AppState(this._prefs, {FeedService? feed}) : _feed = feed ?? FeedService();
+  AppState(this._prefs, {FeedService? feed, SyncService? sync})
+      : _feed = feed ?? FeedService(),
+        _sync = sync ?? SyncService();
 
   final SharedPreferences _prefs;
   final FeedService _feed;
+  final SyncService _sync;
 
   // ---------- wygląd ----------
   String? backgroundPath;
@@ -37,8 +41,22 @@ class AppState extends ChangeNotifier {
   // ---------- gust ----------
   List<String> artists = [...defaultArtists];
   List<String> keywords = [...defaultKeywords];
-  Set<String> favourites = {};
-  Set<String> hidden = {};
+  /// Decyzje per event (Idę / Może / Nie idę, ulubione, ukryte) z czasem zmiany.
+  /// To jest to, co jedzie przez synchronizację.
+  Map<String, PlanEntry> entries = {};
+  Set<String> get favourites => {for (final e in entries.entries) if (e.value.fav) e.key};
+  Set<String> get hidden => {for (final e in entries.entries) if (e.value.hidden) e.key};
+  Plan? planOf(String id) => entries[id]?.plan;
+  bool hideNotGoing = false;
+
+  // ---------- synchronizacja ----------
+  String? syncToken;
+  String? syncGistId;
+  bool syncing = false;
+  String? syncError;
+  DateTime? lastSync;
+  bool get syncEnabled => syncToken != null && syncToken!.isNotEmpty;
+  Timer? _syncDebounce;
   /// Kod kraju albo 'EU' (cała Europa, domyślnie).
   String homeCountry = 'EU';
 
@@ -70,7 +88,8 @@ class AppState extends ChangeNotifier {
     for (final e in [..._festivals, ..._remoteEvents, ...manualEvents]) {
       all[e.id] = e;
     }
-    return all.values.where((e) => !hidden.contains(e.id)).toList();
+    final h = hidden;
+    return all.values.where((e) => !h.contains(e.id)).toList();
   }
 
   List<RadarEvent> get upcoming =>
@@ -85,7 +104,11 @@ class AppState extends ChangeNotifier {
     await _loadCachedEvents();
     notifyListeners();
     unawaited(refresh());
+    // Po powrocie do apki (np. zmieniłeś coś na komputerze) dociągamy plany.
+    _lifecycle = AppLifecycleListener(onResume: () => unawaited(syncNow()));
   }
+
+  AppLifecycleListener? _lifecycle;
 
   void _loadPrefs() {
     final p = _prefs;
@@ -109,8 +132,21 @@ class AppState extends ChangeNotifier {
 
     artists = p.getStringList('taste.artists') ?? artists;
     keywords = p.getStringList('taste.keywords') ?? keywords;
-    favourites = (p.getStringList('taste.favourites') ?? const []).toSet();
-    hidden = (p.getStringList('taste.hidden') ?? const []).toSet();
+    entries = decodeEntries(p.getString('plans.entries'));
+    if (!p.containsKey('plans.entries')) {
+      // Przenosimy stare ulubione/ukryte z wersji bez synchronizacji.
+      for (final id in p.getStringList('taste.favourites') ?? const <String>[]) {
+        entries[id] = PlanEntry(fav: true, at: 1);
+      }
+      for (final id in p.getStringList('taste.hidden') ?? const <String>[]) {
+        entries[id] = (entries[id] ?? const PlanEntry(at: 1)).copyWith(hidden: true, at: 1);
+      }
+    }
+    hideNotGoing = p.getBool('plans.hideNotGoing') ?? hideNotGoing;
+    syncToken = p.getString('sync.token');
+    syncGistId = p.getString('sync.gist');
+    final ls = p.getString('sync.last');
+    lastSync = ls == null ? null : DateTime.tryParse(ls);
     homeCountry = p.getString('taste.home') ?? homeCountry;
     conventionsAlwaysForYou = p.getBool('taste.conventions') ?? conventionsAlwaysForYou;
 
@@ -171,6 +207,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> refresh() async {
     if (loading) return;
+    unawaited(syncNow());
     loading = true;
     lastError = null;
     notifyListeners();
@@ -247,11 +284,22 @@ class AppState extends ChangeNotifier {
     s += matchedArtists(e).length * 25;
     s += matchedKeywords(e).length * 6;
     if (e.countries.any(isHome)) s += 12;
-    if (favourites.contains(e.id)) s += 5;
+    final entry = entries[e.id];
+    if (entry?.fav == true) s += 5;
+    if (entry?.plan == Plan.going) s += 30;
+    if (entry?.plan == Plan.maybe) s += 10;
+    if (entry?.plan == Plan.notGoing) s -= 40;
     return s;
   }
 
-  bool isForYou(RadarEvent e) =>
+  bool isForYou(RadarEvent e) {
+    final plan = planOf(e.id);
+    if (plan == Plan.going || plan == Plan.maybe) return true;
+    if (plan == Plan.notGoing && hideNotGoing) return false;
+    return _matchesTaste(e);
+  }
+
+  bool _matchesTaste(RadarEvent e) =>
       matchedArtists(e).isNotEmpty ||
       matchedKeywords(e).isNotEmpty ||
       e.tier >= 3 ||
@@ -267,22 +315,116 @@ class AppState extends ChangeNotifier {
   // Mutacje
   // ======================================================================
 
-  void toggleFavourite(String id) {
-    favourites.contains(id) ? favourites.remove(id) : favourites.add(id);
-    _prefs.setStringList('taste.favourites', favourites.toList());
+  int _now() => DateTime.now().millisecondsSinceEpoch;
+
+  void _edit(String id, PlanEntry Function(PlanEntry e) change) {
+    final current = entries[id] ?? const PlanEntry(at: 0);
+    var at = _now();
+    // Zegary telefonu i komputera mogą się rozjeżdżać: zmiana zawsze jest nowsza od poprzedniej.
+    if (at <= current.at) at = current.at + 1;
+    entries[id] = change(current).copyWith(at: at);
+    _saveEntries();
     notifyListeners();
+    _scheduleSync();
   }
 
-  void hide(String id) {
-    hidden.add(id);
-    _prefs.setStringList('taste.hidden', hidden.toList());
-    notifyListeners();
-  }
+  void _saveEntries() => _prefs.setString('plans.entries', encodeEntries(entries));
+
+  void toggleFavourite(String id) => _edit(id, (e) => e.copyWith(fav: !e.fav, at: e.at));
+
+  /// Ustawia plan; ten sam plan drugi raz go zdejmuje.
+  void setPlan(String id, Plan? plan) =>
+      _edit(id, (e) => e.copyWith(plan: () => e.plan == plan ? null : plan, at: e.at));
+
+  void hide(String id) => _edit(id, (e) => e.copyWith(hidden: true, at: e.at));
 
   void unhideAll() {
-    hidden.clear();
-    _prefs.setStringList('taste.hidden', const []);
+    for (final id in hidden) {
+      _edit(id, (e) => e.copyWith(hidden: false, at: e.at));
+    }
+  }
+
+  void setHideNotGoing(bool v) {
+    hideNotGoing = v;
+    _prefs.setBool('plans.hideNotGoing', v);
     notifyListeners();
+  }
+
+  // ======================================================================
+  // Synchronizacja (prywatny GitHub Gist)
+  // ======================================================================
+
+  void _scheduleSync() {
+    if (!syncEnabled) return;
+    _syncDebounce?.cancel();
+    _syncDebounce = Timer(const Duration(seconds: 3), () => unawaited(syncNow()));
+  }
+
+  Future<void> setSyncToken(String? token) async {
+    final t = token?.trim();
+    syncToken = (t == null || t.isEmpty) ? null : t;
+    syncGistId = null;
+    syncError = null;
+    if (syncToken == null) {
+      await _prefs.remove('sync.token');
+    } else {
+      await _prefs.setString('sync.token', syncToken!);
+    }
+    await _prefs.remove('sync.gist');
+    notifyListeners();
+    await syncNow();
+  }
+
+  Future<void>? _syncRun;
+  bool _syncAgain = false;
+
+  /// Synchronizuje teraz. Jeśli runda już trwa, dokłada jeszcze jedną po niej,
+  /// żeby świeże zmiany nie czekały na następny raz.
+  Future<void> syncNow() {
+    if (!syncEnabled) return Future.value();
+    if (_syncRun != null) {
+      _syncAgain = true;
+      return _syncRun!;
+    }
+    return _syncRun = _syncLoop().whenComplete(() => _syncRun = null);
+  }
+
+  Future<void> _syncLoop() async {
+    do {
+      _syncAgain = false;
+      await _syncOnce();
+    } while (_syncAgain && syncEnabled && syncError == null);
+  }
+
+  Future<void> _syncOnce() async {
+    syncing = true;
+    syncError = null;
+    notifyListeners();
+    try {
+      final r = await _sync.sync(syncToken!, syncGistId, entries);
+      // W trakcie mogły dojść lokalne zmiany: łączymy jeszcze raz.
+      entries = mergeEntries(entries, r.entries);
+      syncGistId = r.gistId;
+      lastSync = DateTime.now();
+      _saveEntries();
+      await _prefs.setString('sync.gist', r.gistId);
+      await _prefs.setString('sync.last', lastSync!.toIso8601String());
+    } catch (e) {
+      syncError = e is SyncException ? e.message : 'Synchronizacja nie wyszła: $e';
+    } finally {
+      syncing = false;
+      if (!_disposed) notifyListeners();
+    }
+  }
+
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _syncDebounce?.cancel();
+    _lifecycle?.dispose();
+    super.dispose();
   }
 
   void setArtists(List<String> list) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/defaults.dart';
+import '../data/sync_service.dart';
 import '../models/event.dart';
 import 'app_scope.dart';
 import 'event_detail.dart';
@@ -136,6 +137,11 @@ class _CalendarPageState extends State<CalendarPage> {
                             ],
                           ),
                         ),
+                        if (s.planOf(e.id) case final p? when p != Plan.notGoing)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: Icon(planIcon(p), color: planColor(p), size: 20),
+                          ),
                         if (s.favourites.contains(e.id))
                           const Icon(Icons.star_rounded, color: Color(0xFFFFD23F), size: 20),
                         Icon(kindIcon(e.kind), size: 18, color: kindColor(e.kind)),

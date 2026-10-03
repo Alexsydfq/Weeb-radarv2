@@ -6,6 +6,7 @@ Aplikacja na **Androida i Windowsa** (Flutter), która wyszukuje koncerty, trasy
 |---|---|
 | ![Radar](docs/screenshots/phone_radar.png) | ![Windows](docs/screenshots/windows_radar.png) |
 | ![Kalendarz](docs/screenshots/phone_calendar.png) | ![Wygląd](docs/screenshots/phone_look.png) |
+| ![Plany](docs/screenshots/phone_plans.png) | |
 
 > Zrzuty są generowane w teście bez internetu, więc japońskie znaki wyglądają tam jak kwadraciki. W aplikacji działa font M PLUS Rounded 1c z pełnym japońskim.
 
@@ -13,7 +14,8 @@ Aplikacja na **Androida i Windowsa** (Flutter), która wyszukuje koncerty, trasy
 
 - **Radar**: karuzela poleceń, statystyki, wyszukiwarka, filtry (Dla mnie / Wszystko, rodzaj, kraj), sortowanie po dacie albo dopasowaniu, odświeżanie przeciągnięciem.
 - **Kalendarz**: każdy przystanek trasy osobno, pogrupowany miesiącami, z filtrem „tylko mój kraj”.
-- **Ulubione**: gwiazdka przy evencie.
+- **Plany**: przy każdym evencie „Idę / Może / Nie idę” plus gwiazdka. Zakładka „Plany” zbiera to w jednym miejscu; „Nie idę” jest przygaszone (albo schowane z „Dla mnie”, jeśli tak ustawisz).
+- **Synchronizacja telefon ↔ komputer**: plany, gwiazdki i ukryte eventy siedzą w prywatnym GitHub Giście (plik `weeb-radar-sync.json`), bez żadnego serwera. Wygeneruj token na https://github.com/settings/personal-access-tokens/new z uprawnieniem *Account permissions → Gists → Read and write* (albo klasyczny token z zakresem `gist`) i wklej go w Wygląd → Synchronizacja na obu urządzeniach. Synchronizuje się przy starcie, przy odświeżeniu, po powrocie do apki i kilka sekund po każdej zmianie; przy konflikcie wygrywa nowsza zmiana.
 - **Artyści**: lista startowa z Twojego Spotify plus słowa kluczowe (vocaloid, miku, vtuber, j-core...). Edytujesz ją w aplikacji.
 - **Źródła**:
   - feed [`weeb-radar/events.json`](https://github.com/Alexsydfq/weeb-radar) (zapisywany w pamięci, działa offline),

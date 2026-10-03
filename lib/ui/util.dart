@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../data/defaults.dart';
+import '../data/sync_service.dart';
 import '../models/event.dart';
 
 final _day = DateFormat('d MMM', 'pl');
@@ -62,3 +63,17 @@ Future<void> openLink(BuildContext context, String url) async {
     );
   }
 }
+
+const planLabels = {Plan.going: 'Idę', Plan.maybe: 'Może', Plan.notGoing: 'Nie idę'};
+
+IconData planIcon(Plan p) => switch (p) {
+      Plan.going => Icons.check_circle_rounded,
+      Plan.maybe => Icons.help_rounded,
+      Plan.notGoing => Icons.cancel_rounded,
+    };
+
+Color planColor(Plan p) => switch (p) {
+      Plan.going => const Color(0xFF4CD964),
+      Plan.maybe => const Color(0xFFFFB13B),
+      Plan.notGoing => const Color(0xFF9E9E9E),
+    };

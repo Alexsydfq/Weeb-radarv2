@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../data/defaults.dart';
+import '../data/sync_service.dart';
 import '../models/event.dart';
 import 'app_scope.dart';
 import 'background.dart';
@@ -108,6 +109,40 @@ class EventDetailPage extends StatelessWidget {
                           for (final k in keywords) Pill(k, icon: Icons.tag_rounded),
                         ]),
                       ],
+                    ],
+                  ),
+                ),
+                const SectionTitle('Idziesz?'),
+                Glass(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SegmentedButton<Plan>(
+                        emptySelectionAllowed: true,
+                        showSelectedIcon: false,
+                        segments: [
+                          for (final p in Plan.values)
+                            ButtonSegment(value: p, label: Text(planLabels[p]!), icon: Icon(planIcon(p))),
+                        ],
+                        selected: {?s.planOf(event.id)},
+                        style: ButtonStyle(
+                          backgroundColor: WidgetStateProperty.resolveWith((st) {
+                            final p = s.planOf(event.id);
+                            return st.contains(WidgetState.selected) && p != null
+                                ? planColor(p).withValues(alpha: 0.35)
+                                : null;
+                          }),
+                        ),
+                        onSelectionChanged: (v) => s.setPlan(event.id, v.isEmpty ? s.planOf(event.id) : v.first),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        s.syncEnabled
+                            ? 'Synchronizuje się z drugim urządzeniem przez Twój prywatny Gist.'
+                            : 'Synchronizację z telefonem/komputerem włączysz w zakładce Wygląd.',
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
                     ],
                   ),
                 ),

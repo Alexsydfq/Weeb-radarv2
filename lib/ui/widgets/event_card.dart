@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/defaults.dart';
+import '../../data/sync_service.dart';
 import '../../models/event.dart';
 import '../app_scope.dart';
 import '../event_detail.dart';
@@ -19,12 +20,15 @@ class EventCard extends StatelessWidget {
     final theme = Theme.of(context);
     final matched = s.matchedArtists(event);
     final fav = s.favourites.contains(event.id);
+    final plan = s.planOf(event.id);
     final next = event.nextStop;
     final kc = kindColor(event.kind);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Glass(
+      child: Opacity(
+       opacity: plan == Plan.notGoing ? 0.55 : 1,
+       child: Glass(
         padding: const EdgeInsets.fromLTRB(12, 12, 6, 12),
         highlight: matched.isNotEmpty ? s.accent : null,
         onTap: () => Navigator.of(context).push(EventDetailPage.route(event)),
@@ -41,6 +45,7 @@ class EventCard extends StatelessWidget {
                     spacing: 6,
                     runSpacing: 4,
                     children: [
+                      if (plan != null) Pill(planLabels[plan]!, color: planColor(plan), icon: planIcon(plan)),
                       Pill(kindLabels[event.kind] ?? event.kind, color: kc, icon: kindIcon(event.kind)),
                       if (s.isNew(event)) const Pill('NOWE', color: Color(0xFFFF5370), icon: Icons.auto_awesome),
                       if (event.origin == EventOrigin.vocadb)
@@ -111,6 +116,7 @@ class EventCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

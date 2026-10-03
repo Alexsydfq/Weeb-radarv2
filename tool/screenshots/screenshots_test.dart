@@ -38,7 +38,18 @@ void main() {
   });
 
   Future<AppState> state() async {
-    SharedPreferences.setMockInitialValues({'taste.favourites': ['2026-11-miku-expo']});
+    SharedPreferences.setMockInitialValues({
+      'plans.entries': jsonEncode({
+        'entries': {
+          '2026-11-hatsune-miku-expo-europe': {'plan': 'going', 'fav': true, 'at': 1},
+          'fest-primavera-2027': {'plan': 'going', 'at': 1},
+          '2026-10-yoko-kanno-lucca-milan': {'plan': 'maybe', 'at': 1},
+          'fest-pohoda-2027': {'plan': 'maybe', 'at': 1},
+          '2026-12-manga-barcelona': {'fav': true, 'at': 1},
+          '2026-10-spyair-europe': {'plan': 'notGoing', 'at': 1},
+        },
+      }),
+    });
     final feed = File('assets/events_fallback.json').readAsStringSync();
     final client = MockClient((req) async => req.url.host.contains('github')
         ? http.Response.bytes(utf8Bytes(feed), 200)
@@ -52,6 +63,7 @@ void main() {
     ('phone_radar', const Size(412, 915), null),
     ('phone_calendar', const Size(412, 915), 'Kalendarz'),
     ('phone_artists', const Size(412, 915), 'Artyści'),
+    ('phone_plans', const Size(412, 915), 'Plany'),
     ('phone_look', const Size(412, 915), 'Wygląd'),
     ('windows_radar', const Size(1400, 900), null),
   ]) {
@@ -79,5 +91,6 @@ IconData _iconFor(String tab) => switch (tab) {
       'Kalendarz' => Icons.calendar_month_outlined,
       'Artyści' => Icons.headphones_outlined,
       'Wygląd' => Icons.palette_outlined,
+      'Plany' => Icons.event_available_outlined,
       _ => Icons.radar_outlined,
     };

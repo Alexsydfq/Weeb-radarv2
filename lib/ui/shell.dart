@@ -29,7 +29,7 @@ class _ShellState extends State<Shell> {
   static const _dests = [
     _Dest('Radar', Icons.radar_outlined, Icons.radar, RadarPage()),
     _Dest('Kalendarz', Icons.calendar_month_outlined, Icons.calendar_month, CalendarPage()),
-    _Dest('Ulubione', Icons.star_outline_rounded, Icons.star_rounded, FavoritesPage()),
+    _Dest('Plany', Icons.event_available_outlined, Icons.event_available_rounded, FavoritesPage()),
     _Dest('Artyści', Icons.headphones_outlined, Icons.headphones, ArtistsPage()),
     _Dest('Źródła', Icons.travel_explore_outlined, Icons.travel_explore, SourcesPage()),
     _Dest('Wygląd', Icons.palette_outlined, Icons.palette, SettingsPage()),

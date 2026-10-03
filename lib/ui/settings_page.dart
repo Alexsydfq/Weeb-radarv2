@@ -179,6 +179,8 @@ class SettingsPage extends StatelessWidget {
             ],
           ),
         ),
+        const SectionTitle('Synchronizacja telefon ↔ komputer'),
+        const _SyncCard(),
         const SizedBox(height: 18),
         Center(
           child: Text(
@@ -187,6 +189,124 @@ class SettingsPage extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Ustawienia synchronizacji planów przez prywatny GitHub Gist.
+class _SyncCard extends StatefulWidget {
+  const _SyncCard();
+
+  @override
+  State<_SyncCard> createState() => _SyncCardState();
+}
+
+class _SyncCardState extends State<_SyncCard> {
+  final _token = TextEditingController();
+  bool _obscure = true;
+
+  @override
+  void dispose() {
+    _token.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final theme = Theme.of(context);
+    final small = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+
+    return Glass(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Twoje „Idę / Może / Nie idę”, gwiazdki i ukryte eventy lądują w prywatnym Giście na Twoim '
+            'koncie GitHub. Ten sam token wklejasz na telefonie i na komputerze, i tyle.',
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 10),
+          if (!s.syncEnabled) ...[
+            Text(
+              'Token: github.com → Settings → Developer settings → Personal access tokens → '
+              'Fine-grained tokens → Generate. Uprawnienie: Account permissions → Gists → Read and write. '
+              '(Klasyczny token też działa, wtedy zaznacz tylko „gist”.)',
+              style: small,
+            ),
+            const SizedBox(height: 6),
+            TextButton.icon(
+              icon: const Icon(Icons.open_in_new_rounded, size: 18),
+              label: const Text('Otwórz stronę tokenów'),
+              onPressed: () => openLink(context, 'https://github.com/settings/personal-access-tokens/new'),
+            ),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _token,
+              obscureText: _obscure,
+              autocorrect: false,
+              enableSuggestions: false,
+              decoration: InputDecoration(
+                labelText: 'Token GitHub',
+                hintText: 'github_pat_… albo ghp_…',
+                prefixIcon: const Icon(Icons.key_rounded),
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: Icon(_obscure ? Icons.visibility_rounded : Icons.visibility_off_rounded),
+                  onPressed: () => setState(() => _obscure = !_obscure),
+                ),
+              ),
+              onSubmitted: (v) => s.setSyncToken(v),
+            ),
+            const SizedBox(height: 10),
+            FilledButton.icon(
+              icon: const Icon(Icons.cloud_sync_rounded),
+              label: const Text('Włącz synchronizację'),
+              onPressed: () {
+                s.setSyncToken(_token.text);
+                _token.clear();
+              },
+            ),
+          ] else ...[
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: s.syncing
+                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5))
+                  : Icon(s.syncError == null ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+                      color: s.syncError == null ? s.accent : theme.colorScheme.error),
+              title: Text(s.syncError ?? (s.syncing ? 'Synchronizuję…' : 'Synchronizacja włączona')),
+              subtitle: Text(
+                [
+                  if (s.lastSync != null) 'Ostatnio: ${formatDay(s.lastSync!)} ${TimeOfDay.fromDateTime(s.lastSync!).format(context)}',
+                  if (s.syncGistId != null) 'Gist: ${s.syncGistId}',
+                  '${s.entries.values.where((e) => !e.isEmpty).length} eventów z decyzją',
+                ].join(' · '),
+              ),
+            ),
+            Wrap(spacing: 10, runSpacing: 10, children: [
+              FilledButton.icon(
+                icon: const Icon(Icons.sync_rounded),
+                label: const Text('Synchronizuj teraz'),
+                onPressed: s.syncing ? null : s.syncNow,
+              ),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.link_off_rounded),
+                label: const Text('Wyłącz'),
+                onPressed: () => s.setSyncToken(null),
+              ),
+            ]),
+          ],
+          const Divider(height: 28),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: const Icon(Icons.cancel_outlined),
+            title: const Text('Chowaj „Nie idę” z zakładki „Dla mnie”'),
+            subtitle: Text('Wyłączone: zostają, ale przygaszone i niżej', style: small),
+            value: s.hideNotGoing,
+            onChanged: s.setHideNotGoing,
+          ),
+        ],
+      ),
     );
   }
 }
