@@ -254,7 +254,7 @@ class _NotifyCardState extends State<_NotifyCard> {
               leading: const Icon(Icons.schedule_rounded),
               title: const Text('Sprawdzaj co'),
               trailing: DropdownButton<int>(
-                value: const [1, 3, 6, 12, 24].contains(s.notifyHours) ? s.notifyHours : 6,
+                value: const [1, 3, 6, 12, 24].contains(s.notifyHours) ? s.notifyHours : 24,
                 underline: const SizedBox(),
                 items: [
                   for (final h in const [1, 3, 6, 12, 24])

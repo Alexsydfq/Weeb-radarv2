@@ -71,12 +71,26 @@ Map<String, PlanEntry> decodeEntries(String? raw) {
   }
 }
 
-String encodeEntries(Map<String, PlanEntry> entries) => jsonEncode({
+/// Eventy (i zmiany), o których już było powiadomienie na którymś urządzeniu.
+Set<String> decodeNotified(String? raw) {
+  if (raw == null || raw.isEmpty) return {};
+  try {
+    final j = jsonDecode(raw);
+    if (j is Map && j['notified'] is List) return (j['notified'] as List).whereType<String>().toSet();
+  } catch (_) {}
+  return {};
+}
+
+String encodeEntries(Map<String, PlanEntry> entries, {Set<String> notified = const {}}) => jsonEncode({
       'app': 'weeb-radar',
       'version': 1,
       'updated': DateTime.now().toUtc().toIso8601String(),
       'entries': {for (final e in entries.entries) e.key: e.value.toJson()},
+      if (notified.isNotEmpty) 'notified': (notified.toList()..sort()),
     });
+
+/// Zawartość pliku w gistcie.
+typedef SyncDoc = ({Map<String, PlanEntry> entries, Set<String> notified});
 
 class SyncException implements Exception {
   SyncException(this.message);
@@ -125,21 +139,21 @@ class SyncService {
     return null;
   }
 
-  Future<String> createGist(String token, Map<String, PlanEntry> entries) async {
+  Future<String> createGist(String token, Map<String, PlanEntry> entries, {Set<String> notified = const {}}) async {
     final r = await _client.post(
       Uri.parse('$_api/gists'),
       headers: _headers(token),
       body: jsonEncode({
         'description': 'Weeb Radar: synchronizacja planów (Idę / Może / Zainteresowany / Nie idę)',
         'public': false,
-        'files': {fileName: {'content': encodeEntries(entries)}},
+        'files': {fileName: {'content': encodeEntries(entries, notified: notified)}},
       }),
     );
     if (r.statusCode != 201) _fail(r);
     return (jsonDecode(r.body) as Map)['id'] as String;
   }
 
-  Future<Map<String, PlanEntry>?> read(String token, String gistId) async {
+  Future<SyncDoc?> read(String token, String gistId) async {
     final r = await _client.get(Uri.parse('$_api/gists/$gistId'), headers: _headers(token));
     if (r.statusCode == 404) return null;
     if (r.statusCode != 200) _fail(r);
@@ -150,41 +164,47 @@ class SyncService {
       final raw = await _client.get(Uri.parse(file['raw_url'] as String), headers: _headers(token));
       if (raw.statusCode == 200) content = raw.body;
     }
-    return decodeEntries(content);
+    return (entries: decodeEntries(content), notified: decodeNotified(content));
   }
 
-  Future<void> write(String token, String gistId, Map<String, PlanEntry> entries) async {
+  Future<void> write(String token, String gistId, Map<String, PlanEntry> entries,
+      {Set<String> notified = const {}}) async {
     final r = await _client.patch(
       Uri.parse('$_api/gists/$gistId'),
       headers: _headers(token),
       body: jsonEncode({
-        'files': {fileName: {'content': encodeEntries(entries)}},
+        'files': {fileName: {'content': encodeEntries(entries, notified: notified)}},
       }),
     );
     if (r.statusCode != 200) _fail(r);
   }
 
   /// Pełna runda: pobierz, połącz, odeślij. Zwraca połączony stan i id gista.
-  Future<({Map<String, PlanEntry> entries, String gistId})> sync(
+  /// [notified] łączy się jako suma, żeby to samo powiadomienie nie wyskoczyło
+  /// i na telefonie, i na komputerze.
+  Future<({Map<String, PlanEntry> entries, Set<String> notified, String gistId})> sync(
     String token,
     String? gistId,
-    Map<String, PlanEntry> local,
-  ) async {
+    Map<String, PlanEntry> local, {
+    Set<String> notified = const {},
+  }) async {
     String? id = gistId;
-    Map<String, PlanEntry>? remote = id == null ? null : await read(token, id);
+    SyncDoc? remote = id == null ? null : await read(token, id);
     if (remote == null) {
       // Pierwsze połączenie albo gist zniknął: szukamy go na koncie, a jak nie ma, zakładamy nowy.
       id = await findGist(token);
       remote = id == null ? null : await read(token, id);
     }
     if (id == null || remote == null) {
-      return (entries: local, gistId: await createGist(token, local));
+      return (entries: local, notified: notified, gistId: await createGist(token, local, notified: notified));
     }
-    final theirs = remote;
+    final theirs = remote.entries;
     final merged = mergeEntries(local, theirs);
+    final allNotified = {...remote.notified, ...notified};
     final changed = merged.length != theirs.length ||
-        merged.entries.any((e) => theirs[e.key] != e.value);
-    if (changed) await write(token, id, merged);
-    return (entries: merged, gistId: id);
+        merged.entries.any((e) => theirs[e.key] != e.value) ||
+        allNotified.length != remote.notified.length;
+    if (changed) await write(token, id, merged, notified: allNotified);
+    return (entries: merged, notified: allNotified, gistId: id);
   }
 }

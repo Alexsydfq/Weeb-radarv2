@@ -18,9 +18,19 @@ const _task = 'weeb-radar-check';
 Future<int> runCheck(SharedPreferences prefs, {AppState? state}) async {
   final s = state ?? (AppState(prefs)..loadSettings());
   if (!s.notifyEnabled) return 0;
-  await s.refresh(sync: state != null);
+  // Apka mogła właśnie sama odświeżać (start na Windowsie): czekamy na nią.
+  while (s.loading) {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+  }
+  await s.refresh(sync: false);
+  // Tło na Androidzie pisze do tych samych ustawień, więc bierzemy świeży stan.
+  await prefs.reload();
+  final stored = prefs.getStringList('notify.seen');
+  if (stored != null) s.notified = {...?s.notified, ...stored};
   if (s.lastRefresh == null || s.lastError != null && s.upcoming.isEmpty) return 0;
-  final news = await collectNews(s, prefs, s.upcoming);
+  // Najpierw ściągamy z gista, o czym już powiadomił drugi sprzęt.
+  await s.syncNow();
+  final news = await collectNews(s, s.upcoming);
   await Notifier.show(news);
   return news.length;
 }

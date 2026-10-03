@@ -29,6 +29,7 @@ Aplikacja na **Androida i Windowsa** (Flutter), która wyszukuje koncerty, trasy
 - **Android:** apka sprawdza feed w tle (WorkManager), także gdy jest zamknięta, i pokazuje powiadomienie o nowych eventach „Dla mnie” (albo tylko ze Spotify) oraz o zmianach w eventach, które Cię obchodzą. Przy pierwszym starcie zapyta o zgodę na powiadomienia.
 - **Windows:** sprawdza, dopóki apka działa; krzyżyk chowa ją do zasobnika obok zegara, a opcja „Uruchamiaj z Windowsem” startuje ją schowaną razem z systemem.
 - Ustawienia: Wygląd → Powiadomienia (co ile godzin, o czym, „Sprawdź nowości teraz”).
+- Domyślnie raz dziennie. Pierwsze sprawdzenie zgłasza wszystko, co pasuje (test, czy działa); potem każdy event i każda zmiana pojawia się tylko raz. Przy włączonej synchronizacji lista „już powiadomione” jest w tym samym gistcie, więc telefon i komputer nie dublują sobie powiadomień.
 
 ## Pobieranie
 

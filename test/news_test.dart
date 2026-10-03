@@ -11,35 +11,55 @@ RadarEvent ev(String id, String artist, {String kind = 'koncert', String? change
     });
 
 void main() {
-  test('nowości: pierwszy raz cisza, potem tylko nowe i ważne zmiany', () async {
+  test('nowości: pierwszy raz wszystko, potem tylko nowe i ważne zmiany, nic dwa razy', () async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final s = AppState(prefs)..loadSettings();
+    expect(s.notifyHours, 24);
 
     final miku = ev('miku', 'Hatsune Miku');
     final metal = ev('metal', 'Zespół Metalowy');
-    expect(await collectNews(s, prefs, [miku, metal]), isEmpty, reason: 'pierwsze sprawdzenie tylko zapamiętuje');
+    final first = await collectNews(s, [miku, metal]);
+    expect(first.map((n) => n.event.id), ['miku'], reason: 'pierwsze sprawdzenie: wszystko, co pasuje');
+    expect(await collectNews(s, [miku, metal]), isEmpty, reason: 'drugi raz to samo już nie dzwoni');
+    expect(prefs.getStringList('notify.seen'), containsAll(['miku', 'metal']));
 
     final deco = ev('deco', 'DECO*27');
     final other = ev('other', 'Ktoś Obcy');
     final nope = ev('nope', 'Nanahira');
     s.setPlan('nope', Plan.notGoing);
-    final news = await collectNews(s, prefs, [miku, metal, deco, other, nope]);
+    final news = await collectNews(s, [miku, metal, deco, other, nope]);
     expect(news.map((n) => n.event.id), ['deco'], reason: 'tylko nowe, „dla mnie”, bez „Nie idę”');
     expect(news.single.rank, 3);
 
     // Zmiana w evencie z planem → powiadomienie; drugi raz ta sama zmiana już nie.
     s.setPlan('miku', Plan.going);
     final changed = ev('miku', 'Hatsune Miku', change: 'Doszedł koncert w Pradze');
-    final n2 = await collectNews(s, prefs, [changed, metal, deco, other, nope]);
+    final n2 = await collectNews(s, [changed, metal, deco, other, nope]);
     expect(n2.single.change, 'Doszedł koncert w Pradze');
-    expect(await collectNews(s, prefs, [changed, metal, deco, other, nope]), isEmpty);
+    expect(await collectNews(s, [changed, metal, deco, other, nope]), isEmpty);
 
     // Tryb „tylko Spotify”: nowy konwent bez Twoich artystów nie dzwoni.
     s.setNotify(spotifyOnly: true);
     final con = ev('con', 'Jakiś Konwent', kind: 'konwent');
     final kanaria = ev('kan', 'Kanaria');
-    final n3 = await collectNews(s, prefs, [con, kanaria]);
+    final n3 = await collectNews(s, [con, kanaria]);
     expect(n3.map((n) => n.event.id), ['kan']);
+  });
+
+  test('to, o czym powiadomił drugi sprzęt, nie dzwoni drugi raz', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final s = AppState(prefs)..loadSettings();
+    // Tak jakby synchronizacja przyniosła listę z telefonu.
+    await s.markNotified(['miku'], sync: false);
+    final news = await collectNews(s, [ev('miku', 'Hatsune Miku'), ev('deco', 'DECO*27')]);
+    expect(news.map((n) => n.event.id), ['deco']);
+  });
+
+  test('gist trzyma listę powiadomionych', () {
+    final raw = encodeEntries({}, notified: {'b', 'a'});
+    expect(decodeNotified(raw), {'a', 'b'});
+    expect(decodeNotified(encodeEntries({})), isEmpty);
   });
 }

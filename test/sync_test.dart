@@ -112,6 +112,18 @@ void main() {
 
   });
 
+  test('lista „już powiadomione” sumuje się między urządzeniami', () async {
+    final gh = FakeGitHub();
+    final phone = await device(gh, prefs: {'sync.token': 'good'});
+    await phone.markNotified(['miku', 'deco']);
+    final pc = await device(gh, prefs: {'sync.token': 'good'});
+    await pc.syncNow();
+    expect(pc.notified, {'miku', 'deco'});
+    await pc.markNotified(['vocafest']);
+    await phone.syncNow();
+    expect(phone.notified, {'miku', 'deco', 'vocafest'});
+  });
+
   test('zły token daje czytelny błąd i nie psuje lokalnych planów', () async {
     final gh = FakeGitHub();
     final s = await device(gh, prefs: {'sync.token': 'bad'});

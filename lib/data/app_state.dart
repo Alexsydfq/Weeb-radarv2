@@ -56,7 +56,7 @@ class AppState extends ChangeNotifier {
   bool notifySpotifyOnly = false;
 
   /// Co ile godzin sprawdzać nowości w tle.
-  int notifyHours = 6;
+  int notifyHours = 24;
 
   /// Windows: zamknięcie okna chowa apkę do zasobnika, żeby dalej sprawdzała.
   bool trayOnClose = true;
@@ -169,6 +169,7 @@ class AppState extends ChangeNotifier {
     notifyEnabled = p.getBool('notify.enabled') ?? notifyEnabled;
     notifySpotifyOnly = p.getBool('notify.spotifyOnly') ?? notifySpotifyOnly;
     notifyHours = p.getInt('notify.hours') ?? notifyHours;
+    notified = p.getStringList('notify.seen')?.toSet();
     trayOnClose = p.getBool('win.tray') ?? trayOnClose;
     autostart = p.getBool('win.autostart') ?? autostart;
     syncToken = p.getString('sync.token');
@@ -473,6 +474,18 @@ class AppState extends ChangeNotifier {
     await syncNow();
   }
 
+  /// Id eventów (i zmian), które już były w powiadomieniach na którymś
+  /// urządzeniu. null = jeszcze nigdy nie sprawdzaliśmy.
+  Set<String>? notified;
+
+  Future<void> markNotified(Iterable<String> ids, {bool sync = true}) async {
+    final before = notified?.length;
+    notified = {...?notified, ...ids};
+    if (before == notified!.length && before != null) return;
+    await _prefs.setStringList('notify.seen', notified!.toList());
+    if (sync) await syncNow();
+  }
+
   Future<void>? _syncRun;
   bool _syncAgain = false;
 
@@ -499,9 +512,10 @@ class AppState extends ChangeNotifier {
     syncError = null;
     notifyListeners();
     try {
-      final r = await _sync.sync(syncToken!, syncGistId, entries);
+      final r = await _sync.sync(syncToken!, syncGistId, entries, notified: notified ?? const {});
       // W trakcie mogły dojść lokalne zmiany: łączymy jeszcze raz.
       entries = mergeEntries(entries, r.entries);
+      if (r.notified.isNotEmpty) await markNotified(r.notified, sync: false);
       syncGistId = r.gistId;
       lastSync = DateTime.now();
       _saveEntries();
