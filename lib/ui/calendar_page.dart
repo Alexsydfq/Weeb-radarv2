@@ -34,7 +34,7 @@ class _CalendarPageState extends State<CalendarPage> {
       }
       for (final st in e.stops) {
         if (st.date.isBefore(today)) continue;
-        if (_onlyHome && st.cc != s.homeCountry) continue;
+        if (_onlyHome && !s.isHome(st.cc)) continue;
         entries.add((st.date, e, st));
       }
     }
@@ -64,7 +64,7 @@ class _CalendarPageState extends State<CalendarPage> {
                     onSelected: (v) => setState(() => _onlyMine = v),
                   ),
                   FilterChip(
-                    label: Text('Tylko ${countryName(s.homeCountry)}'),
+                    label: Text(s.homeCountry == 'EU' ? 'Tylko Europa' : 'Tylko ${countryName(s.homeCountry)}'),
                     avatar: Text(flagOf(s.homeCountry)),
                     selected: _onlyHome,
                     onSelected: (v) => setState(() => _onlyHome = v),

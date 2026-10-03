@@ -440,7 +440,7 @@ class _Stats extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final mine = events.where((e) => s.matchedArtists(e).isNotEmpty).length;
-    final home = events.where((e) => e.countries.contains(s.homeCountry)).length;
+    final home = events.where((e) => e.countries.any(s.isHome)).length;
     final soon = events.where((e) => e.nextDate.difference(todayDate()).inDays <= 30).length;
     Widget tile(String n, String label, IconData icon) => Expanded(
           child: Glass(
@@ -465,7 +465,7 @@ class _Stats extends StatelessWidget {
         const SizedBox(width: 8),
         tile('$mine', 'z Twoimi', Icons.favorite_rounded),
         const SizedBox(width: 8),
-        tile('$home', '${flagOf(s.homeCountry)} u Ciebie', Icons.home_rounded),
+        tile('$home', s.homeCountry == 'EU' ? 'w Europie' : '${flagOf(s.homeCountry)} u Ciebie', Icons.home_rounded),
         const SizedBox(width: 8),
         tile('$soon', 'w 30 dni', Icons.bolt_rounded),
       ],

@@ -127,7 +127,7 @@ class EventDetailPage extends StatelessWidget {
                             first: i == 0,
                             last: i == event.stops.length - 1,
                             past: st.date.isBefore(today),
-                            home: st.cc == s.homeCountry,
+                            home: s.isHome(st.cc),
                             color: kc,
                           ),
                       ],

@@ -134,7 +134,7 @@ class _ManualEventPageState extends State<ManualEventPage> {
                         initialValue: countryNames.containsKey(_cc) ? _cc : 'UK',
                         decoration: deco('Kraj', Icons.flag_rounded),
                         items: [
-                          for (final c in countryNames.keys.where((k) => k != 'GB'))
+                          for (final c in countryNames.keys.where((k) => k != 'GB' && k != 'EU'))
                             DropdownMenuItem(value: c, child: Text('${flagOf(c)}  ${countryName(c)}')),
                         ],
                         onChanged: (v) => setState(() => _cc = v ?? _cc),

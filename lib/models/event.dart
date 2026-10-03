@@ -27,8 +27,9 @@ class EventStop {
       };
 }
 
-/// Skąd przyszedł event: wspólny feed, VocaDB, dodatkowy feed albo dodany ręcznie.
-enum EventOrigin { feed, vocadb, custom, manual }
+/// Skąd przyszedł event: wspólny feed, VocaDB, dodatkowy feed, dodany ręcznie
+/// albo wbudowany w aplikację (festiwale Awexa).
+enum EventOrigin { feed, vocadb, custom, manual, curated }
 
 class RadarEvent {
   final String id;

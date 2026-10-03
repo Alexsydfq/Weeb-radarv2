@@ -57,4 +57,28 @@ void main() {
     expect(s.isForYou(other), isFalse);
     expect(s.score(mine), greaterThan(s.score(other)));
   });
+
+  test('festiwale Awexa i konwenty trafiają do „Dla mnie”', () async {
+    SharedPreferences.setMockInitialValues({});
+    final s = AppState(await SharedPreferences.getInstance());
+    final ids = s.events.map((e) => e.id);
+    expect(ids, containsAll(['fest-primavera-2027', 'fest-pohoda-2027']));
+    final con = RadarEvent.fromJson({'id': 'c', 'artist': 'Pyrkon', 'kind': 'konwent', 'dateStart': '2030-06-01', 'stops': []});
+    expect(s.isForYou(con), isTrue);
+    s.setConventionsAlwaysForYou(false);
+    expect(s.isForYou(con), isFalse);
+    expect(s.artists, containsAll(['Gorillaz', 'YOASOBI', 'LCD Soundsystem']));
+  });
+
+  test('krótkie nazwy pasują tylko jako osobne słowa', () async {
+    SharedPreferences.setMockInitialValues({});
+    final s = AppState(await SharedPreferences.getInstance());
+    expect(s.mentions('a true story', 'TRUE'), isTrue);
+    expect(s.mentions('construed tiptoe', 'TRUE'), isFalse);
+    expect(s.mentions('construed tiptoe', 'toe'), isFalse);
+    expect(s.mentions('live: マサラダ w berlinie', 'マサラダ'), isTrue);
+    expect(s.homeCountry, 'EU');
+    expect(s.isHome('PL') && s.isHome('UK'), isTrue);
+    expect(s.isHome('JP'), isFalse);
+  });
 }

@@ -39,6 +39,7 @@ IconData kindIcon(String kind) => switch (kind) {
       'konwent' => Icons.festival_rounded,
       'rave' => Icons.nightlife_rounded,
       'vocaloid' => Icons.graphic_eq_rounded,
+      'festiwal' => Icons.celebration_rounded,
       _ => Icons.star_rounded,
     };
 
@@ -48,6 +49,7 @@ Color kindColor(String kind) => switch (kind) {
       'konwent' => const Color(0xFFFFB86B),
       'rave' => const Color(0xFFB98BFF),
       'vocaloid' => const Color(0xFF39C5BB),
+      'festiwal' => const Color(0xFF5BD178),
       _ => const Color(0xFF9E9E9E),
     };
 

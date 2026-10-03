@@ -2,28 +2,59 @@
 /// najczęściej słuchani, ostatnio grane i playlista „Vocaloid and cool stuff”).
 /// W aplikacji można ją dowolnie edytować na ekranie „Artyści”.
 const defaultArtists = <String>[
-  'Hatsune Miku',
-  'DECO*27',
-  'r-906',
-  'マサラダ',
-  '柊マグネタイト',
-  '花譜',
-  '重音テト',
-  '32ki',
-  'えいぷ',
-  'MORE MORE JUMP!',
-  'IOSYS',
-  'BilliumMoto',
-  'Cho Tokimeki Sendenbu',
-  'choko',
-  'wotaku',
-  'Atena',
-  'Lapis Aoki',
-  'Merli',
-  '博衣こより',
-  '姫森ルーナ',
-  'ラプラス・ダークネス',
-  'LCD Soundsystem',
+  // Ze Spotify Awexa i z listy obserwowanych w skanie Weeb Radar.
+  'Hatsune Miku', 'Kasane Teto', '重音テト', 'DECO*27', 'PinocchioP', 'r-906',
+  '花譜', 'KAF', 'V.W.P', 'KAMITSUBAKI', 'Nanahira', 'Kikuo', 'Mili', 'Aiobahn',
+  'ZAQ', 'HANABIE.', 'BABYMETAL', 'Camellia', 't+pazolite', 'kors k',
+  'HARDCORE TANO*C', 'cosMo@Bousou-P', 'Kairiki Bear', 'sasakure.UK', 'MARETU',
+  'Sana Natori', 'マサラダ', 'Masarada', '柊マグネタイト', 'Hiiragi Magnetite',
+  'wotaku', 'hya', 'Jamie Paige', 'Sasuke Haraguchi', 'Machico', 'TRUE', 'LiSA',
+  'LOVEBITES', 'Cho Tokimeki Sendenbu', 'Densetsu.EXE', 'hololive', 'Suisei',
+  'Koyori', '博衣こより', '姫森ルーナ', 'ラプラス・ダークネス', 'Momone Chinoi',
+  "Something's off with my Vocaloid", 'NOMELON NOLEMON', 'Yoshida Yasei',
+  'Hige Driver', 'jon-YAKITORY', 'Yuuyu', 'Chinozo', 'DELUTAYA', '9Lana', 'FARUCO',
+  'hiroki.', 'Parang', 'Wotoha', 'Mitsukiyo', 'nekozume', 'FLAVOR FOLEY', 'Azari',
+  'Tokyo Manaka', 'Nanahoshi Orchestra', 'REDALiCE', 'DJ Myosuke', 'beatMARIO',
+  'COOL&CREATE', 'IOSYS', 'somunia', 'Patra Suou', 'Gakuen iDOLM@STER',
+  'MORE MORE JUMP!', 'Project SEKAI', 'HaKoniwalily', 'MILGRAM', 'KOTOKO',
+  'HoneyWorks', 'NANAOAKARI', 'DAZBEE', 'Ado', 'YOASOBI', 'frederic', 'toe',
+  'ALT BLK ERA', '32ki', 'えいぷ', 'BilliumMoto', 'choko', 'Atena', 'Lapis Aoki',
+  'Merli', 'Vocafest',
+  // Podane przez Awexa: widziani na Pohodzie i Primaverze.
+  'Gorillaz', 'LCD Soundsystem',
+];
+
+/// Festiwale, na które Awex jeździ. Daty z musicfestivalwizard.com (3.10.2026),
+/// line-upy jeszcze nieogłoszone, więc trafiają do radaru jako pewniaki.
+const curatedFestivals = <Map<String, dynamic>>[
+  {
+    'id': 'fest-primavera-2027',
+    'artist': 'Primavera Sound 2027',
+    'title': 'Barcelona',
+    'kind': 'festiwal',
+    'tier': 3,
+    'dateStart': '2027-06-03',
+    'dateEnd': '2027-06-05',
+    'note': 'Jeden z Twoich festiwali. Line-up 2027 jeszcze nieogłoszony, sprawdzaj stronę festiwalu.',
+    'stops': [
+      {'cc': 'ES', 'city': 'Barcelona', 'date': '2027-06-03', 'venue': 'Parc del Fòrum'},
+    ],
+    'url': 'https://www.primaverasound.com/',
+  },
+  {
+    'id': 'fest-pohoda-2027',
+    'artist': 'Pohoda 2027',
+    'title': 'Trenčín',
+    'kind': 'festiwal',
+    'tier': 3,
+    'dateStart': '2027-07-08',
+    'dateEnd': '2027-07-10',
+    'note': 'Jeden z Twoich festiwali. Line-up 2027 jeszcze nieogłoszony.',
+    'stops': [
+      {'cc': 'SK', 'city': 'Trenčín', 'date': '2027-07-08', 'venue': 'Letisko Trenčín'},
+    ],
+    'url': 'https://www.pohodafestival.sk/',
+  },
 ];
 
 /// Słowa, które same w sobie podbijają event (vocaloidy, vtuberzy, j-core).
@@ -85,6 +116,36 @@ const defaultWatchSources = <WatchSource>[
     'Oficjalne trasy Hatsune Miku.',
   ),
   WatchSource(
+    'Primavera Sound',
+    'https://www.primaverasound.com/',
+    'Barcelona, początek czerwca. Line-up zwykle ogłaszany zimą.',
+  ),
+  WatchSource(
+    'Pohoda',
+    'https://www.pohodafestival.sk/',
+    'Trenčín, początek lipca.',
+  ),
+  WatchSource(
+    'Konwenty w Polsce',
+    'https://konwenty-poludniowe.pl/',
+    'Kalendarz polskich konwentów: Pyrkon, Remcon, Hikari i reszta.',
+  ),
+  WatchSource(
+    'AnimeCon (NL)',
+    'https://animecon.nl/en/',
+    'Holenderski konwent, na którym gra m.in. Vocafest UK.',
+  ),
+  WatchSource(
+    'DoKomi',
+    'https://www.dokomi.de/en/',
+    'Düsseldorf, największy konwent w Niemczech, J-Rave i koncerty.',
+  ),
+  WatchSource(
+    'Japan Expo Paris',
+    'https://www.japan-expo-paris.com/',
+    'Lipiec, mnóstwo japońskich gości muzycznych.',
+  ),
+  WatchSource(
     'JaME: koncerty w Europie',
     'https://www.jame-world.com/en/concerts.html',
     'Japońskie zespoły w Europie, aktualizowane na bieżąco.',
@@ -97,6 +158,7 @@ const defaultWatchSources = <WatchSource>[
 ];
 
 const countryNames = <String, String>{
+  'EU': 'Cała Europa',
   'PL': 'Polska',
   'DE': 'Niemcy',
   'UK': 'Wielka Brytania',
@@ -149,5 +211,6 @@ const kindLabels = <String, String>{
   'konwent': 'Konwent',
   'rave': 'Rave',
   'vocaloid': 'Vocaloid',
+  'festiwal': 'Festiwal',
   'inne': 'Inne',
 };

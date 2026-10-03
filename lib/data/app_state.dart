@@ -39,7 +39,11 @@ class AppState extends ChangeNotifier {
   List<String> keywords = [...defaultKeywords];
   Set<String> favourites = {};
   Set<String> hidden = {};
-  String homeCountry = 'PL';
+  /// Kod kraju albo 'EU' (cała Europa, domyślnie).
+  String homeCountry = 'EU';
+
+  /// Konwenty i festiwale zawsze w „Dla mnie”, bo tam często gra coś fajnego.
+  bool conventionsAlwaysForYou = true;
 
   // ---------- źródła ----------
   String feedUrl = defaultFeedUrl;
@@ -57,9 +61,13 @@ class AppState extends ChangeNotifier {
   DateTime? feedUpdated;
   final Map<String, String> sourceStatus = {};
 
+  static final _festivals = curatedFestivals
+      .map((j) => RadarEvent.fromJson(j, origin: EventOrigin.curated))
+      .toList();
+
   List<RadarEvent> get events {
     final all = <String, RadarEvent>{};
-    for (final e in [..._remoteEvents, ...manualEvents]) {
+    for (final e in [..._festivals, ..._remoteEvents, ...manualEvents]) {
       all[e.id] = e;
     }
     return all.values.where((e) => !hidden.contains(e.id)).toList();
@@ -104,6 +112,7 @@ class AppState extends ChangeNotifier {
     favourites = (p.getStringList('taste.favourites') ?? const []).toSet();
     hidden = (p.getStringList('taste.hidden') ?? const []).toSet();
     homeCountry = p.getString('taste.home') ?? homeCountry;
+    conventionsAlwaysForYou = p.getBool('taste.conventions') ?? conventionsAlwaysForYou;
 
     feedUrl = p.getString('src.feed') ?? feedUrl;
     extraFeeds = p.getStringList('src.extra') ?? extraFeeds;
@@ -205,14 +214,31 @@ class AppState extends ChangeNotifier {
   // Dopasowanie do gustu
   // ======================================================================
 
+  bool isHome(String cc) =>
+      homeCountry == 'EU' ? europeCodes.contains(cc.toUpperCase()) : cc.toUpperCase() == homeCountry;
+
+  final Map<String, RegExp> _patterns = {};
+
+  /// Czy nazwa występuje w tekście jako osobne słowo (żeby „TRUE” czy „toe”
+  /// nie łapały się w środku innych słów). Japońskie nazwy szukamy wprost.
+  bool mentions(String text, String name) {
+    final n = name.trim().toLowerCase();
+    if (n.isEmpty) return false;
+    final re = _patterns.putIfAbsent(
+      n,
+      () => RegExp('(?<![a-z0-9])${RegExp.escape(n)}(?![a-z0-9])'),
+    );
+    return re.hasMatch(text);
+  }
+
   List<String> matchedArtists(RadarEvent e) {
     final text = e.searchable;
-    return artists.where((a) => a.trim().isNotEmpty && text.contains(a.toLowerCase())).toList();
+    return artists.where((a) => mentions(text, a)).toList();
   }
 
   List<String> matchedKeywords(RadarEvent e) {
     final text = '${e.searchable} ${e.kind}';
-    return keywords.where((k) => k.trim().isNotEmpty && text.contains(k.toLowerCase())).toList();
+    return keywords.where((k) => mentions(text, k)).toList();
   }
 
   /// Wynik „dla Ciebie”: poziom z feedu, Twoi artyści, słowa kluczowe i bliskość.
@@ -220,13 +246,16 @@ class AppState extends ChangeNotifier {
     var s = e.tier * 10;
     s += matchedArtists(e).length * 25;
     s += matchedKeywords(e).length * 6;
-    if (e.countries.contains(homeCountry)) s += 12;
+    if (e.countries.any(isHome)) s += 12;
     if (favourites.contains(e.id)) s += 5;
     return s;
   }
 
   bool isForYou(RadarEvent e) =>
-      matchedArtists(e).isNotEmpty || matchedKeywords(e).isNotEmpty || e.tier >= 3;
+      matchedArtists(e).isNotEmpty ||
+      matchedKeywords(e).isNotEmpty ||
+      e.tier >= 3 ||
+      (conventionsAlwaysForYou && (e.kind == 'konwent' || e.kind == 'festiwal'));
 
   bool isNew(RadarEvent e) {
     final f = e.foundAt;
@@ -265,6 +294,12 @@ class AppState extends ChangeNotifier {
   void setKeywords(List<String> list) {
     keywords = list;
     _prefs.setStringList('taste.keywords', keywords);
+    notifyListeners();
+  }
+
+  void setConventionsAlwaysForYou(bool v) {
+    conventionsAlwaysForYou = v;
+    _prefs.setBool('taste.conventions', v);
     notifyListeners();
   }
 

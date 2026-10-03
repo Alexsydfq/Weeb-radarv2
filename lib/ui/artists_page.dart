@@ -48,7 +48,7 @@ class _ArtistsPageState extends State<ArtistsPage> {
     final theme = Theme.of(context);
     final counts = {
       for (final a in s.artists)
-        a: s.upcoming.where((e) => e.searchable.contains(a.toLowerCase())).length,
+        a: s.upcoming.where((e) => s.mentions(e.searchable, a)).length,
     };
     final sorted = [...s.artists]..sort((a, b) => counts[b]!.compareTo(counts[a]!));
 
@@ -122,6 +122,17 @@ class _ArtistsPageState extends State<ArtistsPage> {
                   onDeleted: () => s.setArtists(s.artists.where((x) => x != a).toList()),
                 ),
             ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Glass(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: SwitchListTile(
+            secondary: const Icon(Icons.festival_rounded),
+            title: const Text('Konwenty i festiwale zawsze dla mnie'),
+            subtitle: const Text('Pokazuj je w „Dla mnie”, nawet bez znanych nazw w składzie'),
+            value: s.conventionsAlwaysForYou,
+            onChanged: s.setConventionsAlwaysForYou,
           ),
         ),
         const SectionTitle('Słowa kluczowe'),

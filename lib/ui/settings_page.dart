@@ -164,8 +164,8 @@ class SettingsPage extends StatelessWidget {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Text(flagOf(s.homeCountry), style: const TextStyle(fontSize: 26)),
-                title: const Text('Mój kraj'),
-                subtitle: const Text('Eventy w tym kraju dostają bonus i oznaczenie „u Ciebie”'),
+                title: const Text('Mój region'),
+                subtitle: const Text('Eventy w tym regionie dostają bonus i oznaczenie „u Ciebie”'),
                 trailing: DropdownButton<String>(
                   value: s.homeCountry,
                   underline: const SizedBox(),
