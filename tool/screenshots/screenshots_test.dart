@@ -15,7 +15,6 @@ import 'package:weeb_radar/data/app_state.dart';
 import 'package:weeb_radar/data/feed_service.dart';
 import 'package:weeb_radar/main.dart';
 import 'package:weeb_radar/ui/theme.dart';
-import 'package:weeb_radar/ui/widgets/event_card.dart';
 
 Future<void> _font(String family, List<String> files) async {
   final loader = FontLoader(family);
@@ -51,12 +50,29 @@ void main() {
         },
       }),
     });
-    final feed = File('assets/events_fallback.json').readAsStringSync();
+    // Przykładowy line-up i info, żeby było widać, jak wyglądają w szczegółach eventu.
+    final raw = jsonDecode(File('assets/events_fallback.json').readAsStringSync()) as Map;
+    for (final e in raw['events'] as List) {
+      if (e['id'] == '2026-11-hatsune-miku-expo-europe') {
+        e['lineup'] = ['Hatsune Miku', 'Kagamine Rin', 'Kagamine Len', 'Megurine Luka', 'KAITO', 'MEIKO', 'DJ Sample'];
+        e['facts'] = [
+          {'k': 'Bilety', 'v': 'od 49 £, sprzedaż trwa'},
+          {'k': 'Godziny', 'v': 'drzwi 18:30, start 19:30'},
+          {'k': 'Wiek', 'v': 'bez ograniczeń'},
+        ];
+        e['updatedAt'] = '2026-10-01';
+        e['changeNote'] = 'Doszedł koncert w Lizbonie';
+      }
+    }
+    final feed = jsonEncode(raw);
     final client = MockClient((req) async => req.url.host.contains('github')
         ? http.Response.bytes(utf8Bytes(feed), 200)
         : http.Response('{"items":[]}', 200));
     final s = AppState(await SharedPreferences.getInstance(), feed: FeedService(client: client));
     await s.init();
+    while (s.loading) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
     return s;
   }
 
@@ -81,7 +97,7 @@ void main() {
         await tester.pump(const Duration(seconds: 1));
       }
       if (name == 'phone_event') {
-        await tester.tap(find.byType(EventCard).first);
+        await tester.tap(find.text('MIKU EXPO 2026 Europe').first);
         await tester.pump(const Duration(seconds: 1));
       }
       await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 200)));

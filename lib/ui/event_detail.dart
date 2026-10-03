@@ -107,7 +107,8 @@ class EventDetailPage extends StatelessWidget {
                       if (matched.isNotEmpty || keywords.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         Wrap(spacing: 6, runSpacing: 6, children: [
-                          for (final a in matched) Pill(a, color: spotifyGreen, icon: Icons.headphones_rounded),
+                          for (final a in matched.take(6)) Pill(a, color: spotifyGreen, icon: Icons.headphones_rounded),
+                          if (matched.length > 6) Pill('+${matched.length - 6}', color: spotifyGreen),
                           for (final k in keywords) Pill(k, icon: Icons.tag_rounded),
                         ]),
                       ],
@@ -146,6 +147,56 @@ class EventDetailPage extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (event.changeNote != null) ...[
+                  const SizedBox(height: 12),
+                  Glass(
+                    highlight: const Color(0xFFFFB13B),
+                    child: Row(children: [
+                      const Icon(Icons.campaign_rounded, color: Color(0xFFFFB13B)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Zmiana${event.updatedAt != null ? ' (${formatDay(event.updatedAt!)})' : ''}: ${event.changeNote}',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ),
+                    ]),
+                  ),
+                ],
+                if (event.lineup.isNotEmpty) ...[
+                  SectionTitle(
+                    event.kind == 'konwent' ? 'Goście muzyczni (${event.lineup.length})' : 'Line-up (${event.lineup.length})',
+                  ),
+                  Glass(child: _Lineup(event: event)),
+                ],
+                if (event.facts.isNotEmpty) ...[
+                  const SectionTitle('Najważniejsze info'),
+                  Glass(
+                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                    child: Column(
+                      children: [
+                        for (final (i, f) in event.facts.indexed) ...[
+                          if (i > 0) const Divider(height: 1),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(
+                                  width: 120,
+                                  child: Text(f.label,
+                                      style: theme.textTheme.labelLarge
+                                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                                ),
+                                Expanded(child: SelectableText(f.value, style: theme.textTheme.bodyLarge)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
                 if (event.note.isNotEmpty) ...[
                   const SectionTitle('Notatka'),
                   Glass(child: SelectableText(event.note, style: theme.textTheme.bodyLarge)),
@@ -284,6 +335,66 @@ class _StopTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Line-up: Twoi artyści ze Spotify na zielono i na początku, reszta zwyczajnie.
+class _Lineup extends StatefulWidget {
+  const _Lineup({required this.event});
+
+  final RadarEvent event;
+
+  @override
+  State<_Lineup> createState() => _LineupState();
+}
+
+class _LineupState extends State<_Lineup> {
+  static const _collapsed = 30;
+  bool _all = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final theme = Theme.of(context);
+    final entries = [
+      for (final (i, name) in widget.event.lineup.indexed)
+        (name: name, mine: s.artistsIn(name).isNotEmpty, rank: s.rankOfEntry(name), order: i),
+    ]..sort((a, b) {
+        if (a.mine != b.mine) return a.mine ? -1 : 1;
+        if (a.mine) return (a.rank ?? 9999).compareTo(b.rank ?? 9999);
+        return a.order.compareTo(b.order);
+      });
+    final mine = entries.where((e) => e.mine).length;
+    final shown = _all ? entries : entries.take(_collapsed).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (mine > 0)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Text(
+              mine == 1 ? '1 osoba z Twojego Spotify' : '$mine osób z Twojego Spotify',
+              style: theme.textTheme.labelLarge?.copyWith(color: spotifyGreen, fontWeight: FontWeight.w700),
+            ),
+          ),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (final e in shown)
+              e.mine
+                  ? Pill(e.rank != null ? '${e.name}  #${e.rank}' : e.name,
+                      color: spotifyGreen, icon: Icons.headphones_rounded)
+                  : Pill(e.name, color: theme.colorScheme.onSurfaceVariant),
+          ],
+        ),
+        if (entries.length > _collapsed)
+          TextButton(
+            onPressed: () => setState(() => _all = !_all),
+            child: Text(_all ? 'Zwiń' : 'Pokaż wszystkich (${entries.length})'),
+          ),
+      ],
     );
   }
 }

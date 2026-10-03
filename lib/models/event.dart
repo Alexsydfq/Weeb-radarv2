@@ -27,6 +27,15 @@ class EventStop {
       };
 }
 
+/// Jedna ważna informacja o evencie, np. „Bilety” → „od 59 €, sprzedaż od 1.11”.
+class EventFact {
+  final String label;
+  final String value;
+  const EventFact(this.label, this.value);
+
+  Map<String, dynamic> toJson() => {'k': label, 'v': value};
+}
+
 /// Skąd przyszedł event: wspólny feed, VocaDB, dodatkowy feed, dodany ręcznie
 /// albo wbudowany w aplikację (festiwale Awexa).
 enum EventOrigin { feed, vocadb, custom, manual, curated }
@@ -50,6 +59,16 @@ class RadarEvent {
   final DateTime? foundAt;
   final EventOrigin origin;
 
+  /// Line-up festiwalu, goście muzyczni konwentu, supporty koncertu.
+  final List<String> lineup;
+
+  /// Najważniejsze informacje: ceny, start sprzedaży, godziny, wiek, program.
+  final List<EventFact> facts;
+
+  /// Ostatnia istotna zmiana wykryta przez skan.
+  final DateTime? updatedAt;
+  final String? changeNote;
+
   const RadarEvent({
     required this.id,
     required this.artist,
@@ -64,6 +83,10 @@ class RadarEvent {
     this.tickets,
     this.foundAt,
     this.origin = EventOrigin.feed,
+    this.lineup = const [],
+    this.facts = const [],
+    this.updatedAt,
+    this.changeNote,
   });
 
   factory RadarEvent.fromJson(Map<String, dynamic> j,
@@ -91,6 +114,17 @@ class RadarEvent {
       tickets: _nonEmpty(j['tickets']),
       foundAt: _parseDate(j['foundAt']),
       origin: origin,
+      lineup: ((j['lineup'] as List?) ?? const [])
+          .map((x) => x.toString().trim())
+          .where((x) => x.isNotEmpty)
+          .toList(),
+      facts: [
+        for (final f in (j['facts'] as List?) ?? const [])
+          if (f is Map && _nonEmpty(f['k']) != null && _nonEmpty(f['v']) != null)
+            EventFact(_nonEmpty(f['k'])!, _nonEmpty(f['v'])!),
+      ],
+      updatedAt: _parseDate(j['updatedAt']),
+      changeNote: _nonEmpty(j['changeNote']),
     );
   }
 
@@ -107,6 +141,10 @@ class RadarEvent {
         if (url != null) 'url': url,
         if (tickets != null) 'tickets': tickets,
         if (foundAt != null) 'foundAt': _fmt(foundAt!),
+        if (lineup.isNotEmpty) 'lineup': lineup,
+        if (facts.isNotEmpty) 'facts': facts.map((f) => f.toJson()).toList(),
+        if (updatedAt != null) 'updatedAt': _fmt(updatedAt!),
+        if (changeNote != null) 'changeNote': changeNote,
       };
 
   String get displayTitle => title.trim().isEmpty ? artist : title;
@@ -131,7 +169,7 @@ class RadarEvent {
   DateTime get nextDate => nextStop?.date ?? start;
 
   /// Tekst, w którym szukamy nazw Twoich artystów.
-  String get searchable => '$artist $title $note'.toLowerCase();
+  String get searchable => '$artist $title $note ${lineup.join(' · ')}'.toLowerCase();
 }
 
 /// Dzisiejsza data bez godziny.

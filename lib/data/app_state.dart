@@ -85,11 +85,19 @@ class AppState extends ChangeNotifier {
 
   List<RadarEvent> get events {
     final all = <String, RadarEvent>{};
-    for (final e in [..._festivals, ..._remoteEvents, ...manualEvents]) {
+    // Wbudowany festiwal chowamy, gdy skan ma już ten sam festiwal (z line-upem itd.).
+    final curated = _festivals.where((f) => !_remoteEvents.any((r) => _sameFestival(f, r)));
+    for (final e in [...curated, ..._remoteEvents, ...manualEvents]) {
       all[e.id] = e;
     }
     final h = hidden;
     return all.values.where((e) => !h.contains(e.id)).toList();
+  }
+
+  static bool _sameFestival(RadarEvent curated, RadarEvent other) {
+    if (other.kind != 'festiwal') return false;
+    final word = curated.artist.toLowerCase().split(' ').first;
+    return other.artist.toLowerCase().contains(word) && (other.start.difference(curated.start).inDays).abs() <= 45;
   }
 
   List<RadarEvent> get upcoming =>
@@ -277,7 +285,7 @@ class AppState extends ChangeNotifier {
     return artists.where((a) {
       final n = a.trim().toLowerCase();
       // „Queen”, „toe”, „Belle” itp. tylko jako dokładna nazwa artysty eventu.
-      if (_strict.contains(n)) return head == n;
+      if (_strict.contains(n)) return head == n || e.lineup.any((l) => l.trim().toLowerCase() == n);
       return mentions(text, a);
     }).toList();
   }
@@ -291,6 +299,25 @@ class AppState extends ChangeNotifier {
   int? spotifyRank(RadarEvent e) {
     int? best;
     for (final a in matchedArtists(e)) {
+      final r = _spotifyRanks[a.toLowerCase()];
+      if (r != null && (best == null || r < best)) best = r;
+    }
+    return best;
+  }
+
+  /// Twoi artyści schowani w jednej pozycji line-upu (np. „DECO*27 b2b PinocchioP”).
+  List<String> artistsIn(String lineupEntry) {
+    final t = lineupEntry.trim().toLowerCase();
+    return artists.where((a) {
+      final n = a.trim().toLowerCase();
+      return _strict.contains(n) ? t == n : mentions(t, a);
+    }).toList();
+  }
+
+  /// Miejsce w Spotify „Top ogólnie” dla pozycji line-upu (null, gdy jej tam nie ma).
+  int? rankOfEntry(String lineupEntry) {
+    int? best;
+    for (final a in artistsIn(lineupEntry)) {
       final r = _spotifyRanks[a.toLowerCase()];
       if (r != null && (best == null || r < best)) best = r;
     }

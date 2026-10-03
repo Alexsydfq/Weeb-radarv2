@@ -115,4 +115,23 @@ void main() {
     expect(s.isSpotify(ev('Queen', 'Trasa')), isTrue);
     expect(s.score(miku), greaterThan(s.score(ev('Ktoś inny', 'Vocaloid'))));
   });
+
+  test('line-up i najważniejsze info z feedu', () async {
+    SharedPreferences.setMockInitialValues({});
+    final s = AppState(await SharedPreferences.getInstance());
+    final e = RadarEvent.fromJson({
+      'id': 'f', 'artist': 'Jakiś Festiwal 2027', 'kind': 'festiwal', 'dateStart': '2030-07-01', 'stops': [],
+      'lineup': ['Gorillaz', 'Ktoś Obcy', 'Queen', '  '],
+      'facts': [{'k': 'Bilety', 'v': 'od 99 €'}, {'k': '', 'v': 'pusto'}],
+      'changeNote': 'Ogłosili line-up', 'updatedAt': '2030-01-02',
+    });
+    expect(e.lineup, ['Gorillaz', 'Ktoś Obcy', 'Queen']);
+    expect(e.facts.single.label, 'Bilety');
+    expect(e.changeNote, 'Ogłosili line-up');
+    // Artysta z line-upu liczy się jak z tytułu, a „Queen” jako dokładna pozycja line-upu też.
+    expect(s.matchedArtists(e), containsAll(['Gorillaz', 'Queen']));
+    expect(s.artistsIn('Ktoś Obcy'), isEmpty);
+    expect(s.rankOfEntry('Hatsune Miku'), 1);
+    expect(RadarEvent.fromJson(e.toJson()).lineup, e.lineup);
+  });
 }
