@@ -222,7 +222,7 @@ class _SyncCardState extends State<_SyncCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Twoje „Idę / Może / Nie idę”, gwiazdki i ukryte eventy lądują w prywatnym Giście na Twoim '
+            'Twoje „Idę / Może / Zainteresowany / Nie idę”, gwiazdki i ukryte eventy lądują w prywatnym Giście na Twoim '
             'koncie GitHub. Ten sam token wklejasz na telefonie i na komputerze, i tyle.',
             style: theme.textTheme.bodyMedium,
           ),

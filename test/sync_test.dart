@@ -96,10 +96,12 @@ void main() {
 
     phone.setPlan('vocafest-2027', Plan.notGoing);
     phone.setPlan('pohoda-2027', Plan.maybe);
+    phone.setPlan('animecon-2027', Plan.interested);
     await phone.syncNow();
     await pc.syncNow();
     expect(pc.planOf('vocafest-2027'), Plan.notGoing);
     expect(pc.planOf('pohoda-2027'), Plan.maybe);
+    expect(pc.planOf('animecon-2027'), Plan.interested);
 
     // Ten sam plan drugi raz go zdejmuje, i to też się synchronizuje.
     pc.setPlan('pohoda-2027', Plan.maybe);

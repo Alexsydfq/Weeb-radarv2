@@ -64,16 +64,23 @@ Future<void> openLink(BuildContext context, String url) async {
   }
 }
 
-const planLabels = {Plan.going: 'Idę', Plan.maybe: 'Może', Plan.notGoing: 'Nie idę'};
+const planLabels = {
+  Plan.going: 'Idę',
+  Plan.maybe: 'Może',
+  Plan.interested: 'Zainteresowany',
+  Plan.notGoing: 'Nie idę',
+};
 
 IconData planIcon(Plan p) => switch (p) {
       Plan.going => Icons.check_circle_rounded,
       Plan.maybe => Icons.help_rounded,
+      Plan.interested => Icons.visibility_rounded,
       Plan.notGoing => Icons.cancel_rounded,
     };
 
 Color planColor(Plan p) => switch (p) {
       Plan.going => const Color(0xFF4CD964),
       Plan.maybe => const Color(0xFFFFB13B),
+      Plan.interested => const Color(0xFF5AA9FF),
       Plan.notGoing => const Color(0xFF9E9E9E),
     };

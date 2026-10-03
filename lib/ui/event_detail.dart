@@ -118,23 +118,21 @@ class EventDetailPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      SegmentedButton<Plan>(
-                        emptySelectionAllowed: true,
-                        showSelectedIcon: false,
-                        segments: [
+                      // Cztery opcje się nie mieszczą w jednym rzędzie na telefonie, więc się zawijają.
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
                           for (final p in Plan.values)
-                            ButtonSegment(value: p, label: Text(planLabels[p]!), icon: Icon(planIcon(p))),
+                            ChoiceChip(
+                              avatar: Icon(planIcon(p), color: planColor(p), size: 18),
+                              label: Text(planLabels[p]!),
+                              showCheckmark: false,
+                              selected: s.planOf(event.id) == p,
+                              selectedColor: planColor(p).withValues(alpha: 0.35),
+                              onSelected: (_) => s.setPlan(event.id, p),
+                            ),
                         ],
-                        selected: {?s.planOf(event.id)},
-                        style: ButtonStyle(
-                          backgroundColor: WidgetStateProperty.resolveWith((st) {
-                            final p = s.planOf(event.id);
-                            return st.contains(WidgetState.selected) && p != null
-                                ? planColor(p).withValues(alpha: 0.35)
-                                : null;
-                          }),
-                        ),
-                        onSelectionChanged: (v) => s.setPlan(event.id, v.isEmpty ? s.planOf(event.id) : v.first),
                       ),
                       const SizedBox(height: 8),
                       Text(

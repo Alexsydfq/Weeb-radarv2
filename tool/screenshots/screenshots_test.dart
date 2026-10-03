@@ -15,6 +15,7 @@ import 'package:weeb_radar/data/app_state.dart';
 import 'package:weeb_radar/data/feed_service.dart';
 import 'package:weeb_radar/main.dart';
 import 'package:weeb_radar/ui/theme.dart';
+import 'package:weeb_radar/ui/widgets/event_card.dart';
 
 Future<void> _font(String family, List<String> files) async {
   final loader = FontLoader(family);
@@ -44,7 +45,7 @@ void main() {
           '2026-11-hatsune-miku-expo-europe': {'plan': 'going', 'fav': true, 'at': 1},
           'fest-primavera-2027': {'plan': 'going', 'at': 1},
           '2026-10-yoko-kanno-lucca-milan': {'plan': 'maybe', 'at': 1},
-          'fest-pohoda-2027': {'plan': 'maybe', 'at': 1},
+          'fest-pohoda-2027': {'plan': 'interested', 'at': 1},
           '2026-12-manga-barcelona': {'fav': true, 'at': 1},
           '2026-10-spyair-europe': {'plan': 'notGoing', 'at': 1},
         },
@@ -64,6 +65,7 @@ void main() {
     ('phone_calendar', const Size(412, 915), 'Kalendarz'),
     ('phone_artists', const Size(412, 915), 'Artyści'),
     ('phone_plans', const Size(412, 915), 'Plany'),
+    ('phone_event', const Size(412, 915), 'Plany'),
     ('phone_look', const Size(412, 915), 'Wygląd'),
     ('windows_radar', const Size(1400, 900), null),
   ]) {
@@ -76,6 +78,10 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       if (tab != null) {
         await tester.tap(find.byIcon(_iconFor(tab)).first);
+        await tester.pump(const Duration(seconds: 1));
+      }
+      if (name == 'phone_event') {
+        await tester.tap(find.byType(EventCard).first);
         await tester.pump(const Duration(seconds: 1));
       }
       await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 200)));

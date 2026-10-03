@@ -6,7 +6,7 @@ import 'app_scope.dart';
 import 'util.dart';
 import 'widgets/event_card.dart';
 
-/// Twoje plany: Idę / Może / ulubione, a na końcu to, na co nie idziesz.
+/// Twoje plany: Idę / Może / Zainteresowany / ulubione, a na końcu to, na co nie idziesz.
 class FavoritesPage extends StatelessWidget {
   const FavoritesPage({super.key});
 
@@ -25,7 +25,7 @@ class FavoritesPage extends StatelessWidget {
         .toList();
 
     final sections = <(String, IconData, Color?, List<RadarEvent>)>[
-      for (final p in [Plan.going, Plan.maybe]) (planLabels[p]!, planIcon(p), planColor(p), withPlan(p)),
+      for (final p in [Plan.going, Plan.maybe, Plan.interested]) (planLabels[p]!, planIcon(p), planColor(p), withPlan(p)),
       ('Ulubione, bez decyzji', Icons.star_rounded, const Color(0xFFFFD23F), withPlan(null)),
       (planLabels[Plan.notGoing]!, planIcon(Plan.notGoing), planColor(Plan.notGoing), withPlan(Plan.notGoing)),
     ];
@@ -70,7 +70,7 @@ class FavoritesPage extends StatelessWidget {
               const Text('☆ (ﾉ◕ヮ◕)ﾉ*:・ﾟ✧', style: TextStyle(fontSize: 26)),
               const SizedBox(height: 10),
               Text(
-                'N-nie ma tu nic! Otwórz event i kliknij „Idę”, „Może” albo gwiazdkę. Nie żeby mi zależało.',
+                'N-nie ma tu nic! Otwórz event i kliknij „Idę”, „Może”, „Zainteresowany” albo gwiazdkę. Nie żeby mi zależało.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyLarge,
               ),

@@ -41,7 +41,7 @@ class AppState extends ChangeNotifier {
   // ---------- gust ----------
   List<String> artists = [...defaultArtists];
   List<String> keywords = [...defaultKeywords];
-  /// Decyzje per event (Idę / Może / Nie idę, ulubione, ukryte) z czasem zmiany.
+  /// Decyzje per event (Idę / Może / Zainteresowany / Nie idę, ulubione, ukryte) z czasem zmiany.
   /// To jest to, co jedzie przez synchronizację.
   Map<String, PlanEntry> entries = {};
   Set<String> get favourites => {for (final e in entries.entries) if (e.value.fav) e.key};
@@ -288,13 +288,14 @@ class AppState extends ChangeNotifier {
     if (entry?.fav == true) s += 5;
     if (entry?.plan == Plan.going) s += 30;
     if (entry?.plan == Plan.maybe) s += 10;
+    if (entry?.plan == Plan.interested) s += 6;
     if (entry?.plan == Plan.notGoing) s -= 40;
     return s;
   }
 
   bool isForYou(RadarEvent e) {
     final plan = planOf(e.id);
-    if (plan == Plan.going || plan == Plan.maybe) return true;
+    if (plan == Plan.going || plan == Plan.maybe || plan == Plan.interested) return true;
     if (plan == Plan.notGoing && hideNotGoing) return false;
     return _matchesTaste(e);
   }

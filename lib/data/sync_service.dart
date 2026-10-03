@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 /// Czy idziesz na event.
-enum Plan { going, maybe, notGoing }
+enum Plan { going, maybe, interested, notGoing }
 
 /// Twoje decyzje dla jednego eventu. `at` to czas ostatniej zmiany
 /// (ms od epoki): przy łączeniu telefonu z komputerem wygrywa nowsza zmiana.
@@ -130,7 +130,7 @@ class SyncService {
       Uri.parse('$_api/gists'),
       headers: _headers(token),
       body: jsonEncode({
-        'description': 'Weeb Radar: synchronizacja planów (Idę / Może / Nie idę)',
+        'description': 'Weeb Radar: synchronizacja planów (Idę / Może / Zainteresowany / Nie idę)',
         'public': false,
         'files': {fileName: {'content': encodeEntries(entries)}},
       }),
