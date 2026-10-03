@@ -5,6 +5,7 @@ import 'background.dart';
 import 'calendar_page.dart';
 import 'favorites_page.dart';
 import 'japan_page.dart';
+import 'music_page.dart';
 import 'radar_page.dart';
 import 'settings_page.dart';
 import 'sources_page.dart';
@@ -29,9 +30,10 @@ class _ShellState extends State<Shell> {
 
   static const _dests = [
     _Dest('Radar', Icons.radar_outlined, Icons.radar, RadarPage()),
+    _Dest('Muzyka', Icons.library_music_outlined, Icons.library_music, MusicPage()),
     _Dest('Japonia', Icons.temple_buddhist_outlined, Icons.temple_buddhist, JapanPage()),
-    _Dest('Kalendarz', Icons.calendar_month_outlined, Icons.calendar_month, CalendarPage()),
     _Dest('Plany', Icons.event_available_outlined, Icons.event_available_rounded, FavoritesPage()),
+    _Dest('Kalendarz', Icons.calendar_month_outlined, Icons.calendar_month, CalendarPage()),
     _Dest('Artyści', Icons.headphones_outlined, Icons.headphones, ArtistsPage()),
     _Dest('Źródła', Icons.travel_explore_outlined, Icons.travel_explore, SourcesPage()),
     _Dest('Wygląd', Icons.palette_outlined, Icons.palette, SettingsPage()),
@@ -86,10 +88,7 @@ class _ShellState extends State<Shell> {
                     selectedIndex: _index,
                     onDestinationSelected: (i) => setState(() => _index = i),
                     labelType: NavigationRailLabelType.all,
-                    leading: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      child: _Logo(),
-                    ),
+                    leading: Padding(padding: const EdgeInsets.symmetric(vertical: 18), child: _Logo()),
                     destinations: [
                       for (final d in _dests)
                         NavigationRailDestination(
@@ -111,11 +110,7 @@ class _ShellState extends State<Shell> {
                 labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
                 destinations: [
                   for (final d in _dests.take(_bar))
-                    NavigationDestination(
-                      icon: Icon(d.icon),
-                      selectedIcon: Icon(d.selected),
-                      label: d.label,
-                    ),
+                    NavigationDestination(icon: Icon(d.icon), selectedIcon: Icon(d.selected), label: d.label),
                   NavigationDestination(
                     icon: const Icon(Icons.more_horiz_rounded),
                     selectedIcon: const Icon(Icons.more_horiz_rounded),
@@ -145,9 +140,11 @@ class _Logo extends StatelessWidget {
           child: const Icon(Icons.radar, color: Colors.white),
         ),
         const SizedBox(height: 6),
-        Text('Weeb\nRadar',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w900)),
+        Text(
+          'Weeb\nRadar',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w900),
+        ),
       ],
     );
   }

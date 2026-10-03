@@ -7,12 +7,16 @@ Aplikacja na **Androida i Windowsa** (Flutter), która wyszukuje koncerty, trasy
 | ![Radar](docs/screenshots/phone_radar.png) | ![Windows](docs/screenshots/windows_radar.png) |
 | ![Kalendarz](docs/screenshots/phone_calendar.png) | ![Wygląd](docs/screenshots/phone_look.png) |
 | ![Plany](docs/screenshots/phone_plans.png) | ![Event](docs/screenshots/phone_event.png) |
+| ![Nowa muzyka](docs/screenshots/phone_music.png) | ![Japonia](docs/screenshots/phone_japan.png) |
 
 > Zrzuty są generowane w teście bez internetu, więc japońskie znaki wyglądają tam jak kwadraciki. W aplikacji działa font M PLUS Rounded 1c z pełnym japońskim.
 
 ## Co umie
 
 - **Radar**: karuzela poleceń, statystyki, wyszukiwarka, filtry (Dla mnie / Wszystko, rodzaj, kraj), sortowanie po dacie albo dopasowaniu, odświeżanie przeciągnięciem.
+- **Szczegóły eventu**: „Kto to?” z krótkim opisem, skąd znasz artystę, i najpopularniejsze kawałki (klik otwiera Spotify). Na trasie stukasz miasto, na które jedziesz, i ten termin liczy się wszędzie (karty, kalendarz, powiadomienia); wybór synchronizuje się jak plany.
+- **Japonia**: osobna zakładka z eventami w Japonii (lajwy VTuberek, Vocaloid, J-core, MOGRA), żeby nie mieszały się z Europą. Ma własny przełącznik powiadomień.
+- **Nowa muzyka**: codziennie świeże kawałki Twoich artystów plus kilka propozycji spoza listy, z opisem twórcy i piosenki, linkami do Spotify i YouTube. Powiadomienia idą osobnym, cichym kanałem.
 - **Kalendarz**: każdy przystanek trasy osobno, pogrupowany miesiącami, z filtrem „tylko mój kraj”.
 - **Plany**: przy każdym evencie „Idę / Może / Zainteresowany / Nie idę” plus gwiazdka. Zakładka „Plany” zbiera to w jednym miejscu; „Nie idę” jest przygaszone (albo schowane z „Dla mnie”, jeśli tak ustawisz).
 - **Synchronizacja telefon ↔ komputer**: plany, gwiazdki i ukryte eventy siedzą w prywatnym GitHub Giście (plik `weeb-radar-sync.json`), bez żadnego serwera. Wygeneruj token na https://github.com/settings/personal-access-tokens/new z uprawnieniem *Account permissions → Gists → Read and write* (albo klasyczny token z zakresem `gist`) i wklej go w Wygląd → Synchronizacja na obu urządzeniach. Synchronizuje się przy starcie, przy odświeżeniu, po powrocie do apki i kilka sekund po każdej zmianie; przy konflikcie wygrywa nowsza zmiana.
@@ -70,7 +74,25 @@ flutter test tool/screenshots/screenshots_test.dart --update-goldens   # odświe
       "stops": [{ "cc": "PL", "city": "Warszawa", "date": "2026-11-20", "venue": "Klub" }],
       "url": "https://...",
       "tickets": "https://...",
-      "foundAt": "2026-10-02"
+      "foundAt": "2026-10-02",
+      "region": "JP (tylko Japonia, inaczej brak)",
+      "about": "kto to i skąd go znasz",
+      "hits": ["Ievan Polkka", "World is Mine"]
+    }
+  ]
+}
+```
+
+Obok leży `music.json` z nową muzyką:
+
+```json
+{
+  "updated": "2026-10-03T00:00:00Z",
+  "songs": [
+    {
+      "id": "unikalne-id", "title": "Onee-sama♡Love Call", "artist": "Laplus Darknesss × IOSYS",
+      "released": "2026-10-01", "kind": "singiel | album | EP | cover | MV",
+      "about": "o twórcy", "songAbout": "o kawałku", "url": "https://...", "pick": true, "foundAt": "2026-10-03"
     }
   ]
 }

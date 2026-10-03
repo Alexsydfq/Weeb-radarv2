@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../data/news.dart';
+import '../models/song.dart';
 import '../ui/util.dart';
 
 /// Powiadomienia systemowe na Androidzie i Windowsie.
@@ -21,6 +22,45 @@ class Notifier {
     icon: 'ic_stat_radar',
     color: spotifyGreen,
   );
+
+  /// Nowa muzyka: osobny, cichy kanał (bez dźwięku, nie wyskakuje na ekran).
+  static const _music = AndroidNotificationDetails(
+    'weeb_radar_music',
+    'Nowa muzyka',
+    channelDescription: 'Nowe kawałki Twoich artystów i propozycje, mniej ważne niż eventy',
+    importance: Importance.low,
+    priority: Priority.low,
+    icon: 'ic_stat_radar',
+    color: spotifyGreen,
+  );
+
+  static Future<void> showSongs(List<Song> songs) async {
+    if (songs.isEmpty || !supported) return;
+    await init();
+    String line(Song x) => '${x.pick ? '✨' : '🎵'} ${x.artist} – ${x.title}';
+    final title = songs.length == 1
+        ? 'Nowy kawałek: ${songs.single.artist}'
+        : 'Nowa muzyka: ${songs.length} ${songs.length < 5 ? 'kawałki' : 'kawałków'}';
+    final lines = songs.take(6).map(line).toList();
+    await _plugin.show(
+      id: 2,
+      title: title,
+      body: songs.length == 1 ? songs.single.title : lines.join('\n'),
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          _music.channelId,
+          _music.channelName,
+          channelDescription: _music.channelDescription,
+          importance: _music.importance,
+          priority: _music.priority,
+          icon: _music.icon,
+          color: _music.color,
+          styleInformation: InboxStyleInformation(lines, contentTitle: title),
+        ),
+        windows: const WindowsNotificationDetails(),
+      ),
+    );
+  }
 
   static bool get supported => !kIsWeb && (Platform.isAndroid || Platform.isWindows);
 

@@ -1,4 +1,5 @@
 import '../models/event.dart';
+import '../models/song.dart';
 import 'app_state.dart';
 import 'sync_service.dart';
 
@@ -57,4 +58,20 @@ Future<List<NewsItem>> collectNews(AppState s, List<RadarEvent> events) async {
     return a.event.nextDate.compareTo(b.event.nextDate);
   });
   return news;
+}
+
+
+/// Nowe kawałki do cichego powiadomienia: od Twoich artystów i propozycje skanu.
+/// Też tylko raz (wspólny zbiór „już powiadomione”).
+Future<List<Song>> collectSongNews(AppState s, List<Song> songs) async {
+  if (songs.isEmpty) return const [];
+  final seen = s.notified ?? const <String>{};
+  final fresh = [
+    if (s.notifyMusic)
+      for (final x in songs)
+        if (!seen.contains(x.key) && (s.isMySong(x) || x.pick)) x,
+  ];
+  await s.markNotified([for (final x in songs) x.key]);
+  fresh.sort((a, b) => (s.songRank(a) ?? 99999).compareTo(s.songRank(b) ?? 99999));
+  return fresh;
 }

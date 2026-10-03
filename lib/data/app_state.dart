@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/event.dart';
+import '../models/song.dart';
 import 'defaults.dart';
 import 'feed_service.dart';
 import 'sync_service.dart';
@@ -58,6 +59,7 @@ class AppState extends ChangeNotifier {
   /// Co ile godzin sprawdzać nowości w tle.
   int notifyHours = 24;
   bool notifyJapan = true;
+  bool notifyMusic = true;
 
   /// Windows: zamknięcie okna chowa apkę do zasobnika, żeby dalej sprawdzała.
   bool trayOnClose = true;
@@ -201,6 +203,7 @@ class AppState extends ChangeNotifier {
     notifySpotifyOnly = p.getBool('notify.spotifyOnly') ?? notifySpotifyOnly;
     notifyHours = p.getInt('notify.hours') ?? notifyHours;
     notifyJapan = p.getBool('notify.japan') ?? notifyJapan;
+    notifyMusic = p.getBool('notify.music') ?? notifyMusic;
     notified = p.getStringList('notify.seen')?.toSet();
     trayOnClose = p.getBool('win.tray') ?? trayOnClose;
     autostart = p.getBool('win.autostart') ?? autostart;
@@ -237,6 +240,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _loadCachedEvents() async {
+    songs = Song.parseFeed(_prefs.getString('music.cache') ?? '[]');
     final cached = _prefs.getString('events.cache');
     if (cached != null) {
       try {
@@ -300,6 +304,16 @@ class AppState extends ChangeNotifier {
           }),
         );
         await _prefs.setString('events.lastRefresh', lastRefresh!.toIso8601String());
+      }
+      try {
+        final music = await _feed.fetchMusic(feedUrl: feedUrl, githubToken: syncToken);
+        sourceStatus['Nowa muzyka'] = 'ok (${music.length})';
+        if (music.isNotEmpty) {
+          songs = music;
+          await _prefs.setString('music.cache', jsonEncode({'songs': songs.map((x) => x.toJson()).toList()}));
+        }
+      } catch (e) {
+        sourceStatus['Nowa muzyka'] = 'błąd: $e';
       }
       if (result.status.values.every((s) => s.startsWith('błąd'))) {
         lastError = 'Nie udało się pobrać żadnego źródła. Pokazuję zapisane dane.';
@@ -382,6 +396,33 @@ class AppState extends ChangeNotifier {
 
   /// Czy na evencie gra ktoś, kogo słuchasz (lista artystów pochodzi ze Spotify).
   bool isSpotify(RadarEvent e) => matchedArtists(e).isNotEmpty;
+
+  // ======================================================================
+  // Nowa muzyka
+  // ======================================================================
+
+  /// Nowe kawałki z codziennego skanu, najnowsze na górze.
+  List<Song> songs = const [];
+
+  /// Twój artysta z listy (najlepsze miejsce w Spotify albo 0, gdy jest na liście bez miejsca).
+  int? songRank(Song x) {
+    final head = x.artist.toLowerCase();
+    int? best;
+    for (final a in artists) {
+      final n = a.trim().toLowerCase();
+      final hit = _strict.contains(n) ? head == n : mentions(head, a);
+      if (!hit) continue;
+      final r = _spotifyRanks[n] ?? 9999;
+      if (best == null || r < best) best = r;
+    }
+    return best;
+  }
+
+  bool isMySong(Song x) => songRank(x) != null;
+
+  bool isSongFav(Song x) => entries[x.key]?.fav ?? false;
+
+  void toggleSongFav(Song x) => toggleFavourite(x.key);
 
   List<String> matchedKeywords(RadarEvent e) {
     final text = '${e.searchable} ${e.kind}';
@@ -467,7 +508,8 @@ class AppState extends ChangeNotifier {
   /// Wołane po zmianie ustawień powiadomień (planowanie w tle, autostart itp.).
   VoidCallback? onNotifySettingsChanged;
 
-  void setNotify({bool? enabled, bool? spotifyOnly, int? hours, bool? tray, bool? startup, bool? japan}) {
+  void setNotify({bool? enabled, bool? spotifyOnly, int? hours, bool? tray, bool? startup, bool? japan, bool? music}) {
+    if (music != null) _prefs.setBool('notify.music', notifyMusic = music);
     if (enabled != null) _prefs.setBool('notify.enabled', notifyEnabled = enabled);
     if (japan != null) _prefs.setBool('notify.japan', notifyJapan = japan);
     if (spotifyOnly != null) _prefs.setBool('notify.spotifyOnly', notifySpotifyOnly = spotifyOnly);

@@ -32,7 +32,9 @@ Future<int> runCheck(SharedPreferences prefs, {AppState? state}) async {
   await s.syncNow();
   final news = await collectNews(s, s.upcoming);
   await Notifier.show(news);
-  return news.length;
+  final songs = await collectSongNews(s, s.songs);
+  await Notifier.showSongs(songs);
+  return news.length + songs.length;
 }
 
 /// Punkt wejścia WorkManagera na Androidzie (osobny isolate, apka może być zamknięta).

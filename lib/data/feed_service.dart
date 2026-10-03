@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/event.dart';
+import '../models/song.dart';
 import 'defaults.dart';
 
 class ParsedFeed {
@@ -73,6 +74,15 @@ class FeedService {
     ]);
 
     return FetchResult(all.values.toList(), updated, status);
+  }
+
+  /// Nowa muzyka z music.json (obok events.json). Brak pliku = pusta lista.
+  Future<List<Song>> fetchMusic({required String feedUrl, String? githubToken}) async {
+    final (uri, headers) = githubRequest(Song.feedUrlFor(feedUrl), githubToken);
+    final res = await _client.get(uri, headers: headers).timeout(_timeout);
+    if (res.statusCode == 404) return const [];
+    if (res.statusCode != 200) throw 'HTTP ${res.statusCode}';
+    return Song.parseFeed(utf8.decode(res.bodyBytes));
   }
 
   /// Feed z GitHuba przy podanym tokenie czytamy przez API, żeby działał też

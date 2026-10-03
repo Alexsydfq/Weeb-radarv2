@@ -27,8 +27,7 @@ class SettingsPage extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4),
-          child: Text('Wygląd',
-              style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w900)),
+          child: Text('Wygląd', style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w900)),
         ),
         const SectionTitle('Tło'),
         Glass(
@@ -49,41 +48,51 @@ class SettingsPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              Text('PNG, JPG, GIF (animowany!), WebP i BMP. Plik kopiuję do folderu aplikacji.',
-                  style: theme.textTheme.bodySmall),
+              Text(
+                'PNG, JPG, GIF (animowany!), WebP i BMP. Plik kopiuję do folderu aplikacji.',
+                style: theme.textTheme.bodySmall,
+              ),
               const SizedBox(height: 10),
-              Wrap(spacing: 10, runSpacing: 10, children: [
-                FilledButton.icon(
-                  icon: const Icon(Icons.wallpaper_rounded),
-                  label: const Text('Wybierz tło'),
-                  onPressed: () async {
-                    try {
-                      final err = await s.pickBackground();
-                      if (err != null && context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  FilledButton.icon(
+                    icon: const Icon(Icons.wallpaper_rounded),
+                    label: const Text('Wybierz tło'),
+                    onPressed: () async {
+                      try {
+                        final err = await s.pickBackground();
+                        if (err != null && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(SnackBar(content: Text('Nie udało się wczytać pliku: $e')));
+                        }
                       }
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(SnackBar(content: Text('Nie udało się wczytać pliku: $e')));
-                      }
-                    }
-                  },
-                ),
-                if (s.backgroundPath != null)
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.delete_outline_rounded),
-                    label: const Text('Usuń tło'),
-                    onPressed: s.clearBackground,
+                    },
                   ),
-              ]),
+                  if (s.backgroundPath != null)
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.delete_outline_rounded),
+                      label: const Text('Usuń tło'),
+                      onPressed: s.clearBackground,
+                    ),
+                ],
+              ),
               const SizedBox(height: 16),
               Text('Dopasowanie', style: theme.textTheme.labelLarge),
               const SizedBox(height: 6),
               SegmentedButton<BackgroundFit>(
                 segments: const [
                   ButtonSegment(value: BackgroundFit.cover, label: Text('Wypełnij'), icon: Icon(Icons.crop_rounded)),
-                  ButtonSegment(value: BackgroundFit.contain, label: Text('Zmieść'), icon: Icon(Icons.fit_screen_rounded)),
+                  ButtonSegment(
+                    value: BackgroundFit.contain,
+                    label: Text('Zmieść'),
+                    icon: Icon(Icons.fit_screen_rounded),
+                  ),
                   ButtonSegment(value: BackgroundFit.tile, label: Text('Kafelki'), icon: Icon(Icons.grid_view_rounded)),
                 ],
                 selected: {s.backgroundFit},
@@ -159,7 +168,11 @@ class SettingsPage extends StatelessWidget {
                 segments: const [
                   ButtonSegment(value: ThemeMode.dark, label: Text('Ciemny'), icon: Icon(Icons.dark_mode_rounded)),
                   ButtonSegment(value: ThemeMode.light, label: Text('Jasny'), icon: Icon(Icons.light_mode_rounded)),
-                  ButtonSegment(value: ThemeMode.system, label: Text('System'), icon: Icon(Icons.settings_suggest_rounded)),
+                  ButtonSegment(
+                    value: ThemeMode.system,
+                    label: Text('System'),
+                    icon: Icon(Icons.settings_suggest_rounded),
+                  ),
                 ],
                 selected: {s.themeMode},
                 onSelectionChanged: (v) => s.setThemeMode(v.first),
@@ -227,9 +240,7 @@ class _NotifyCardState extends State<_NotifyCard> {
             secondary: const Icon(Icons.notifications_active_rounded),
             title: const Text('Powiadamiaj o nowościach'),
             subtitle: Text(
-              windows
-                  ? 'Sprawdzam w tle, dopóki apka działa (też schowana w zasobniku obok zegara).'
-                  : 'Sprawdzam w tle, nawet gdy apka jest zamknięta. Android może to trochę przesunąć, żeby oszczędzać baterię.',
+              windows ? 'Sprawdzam w tle, dopóki apka działa (też schowana w zasobniku obok zegara).' : 'Sprawdzam w tle, nawet gdy apka jest zamknięta. Android może to trochę przesunąć, żeby oszczędzać baterię.',
               style: small,
             ),
             value: s.notifyEnabled,
@@ -248,8 +259,10 @@ class _NotifyCardState extends State<_NotifyCard> {
               onSelectionChanged: (v) => s.setNotify(spotifyOnly: v.first),
             ),
             const SizedBox(height: 6),
-            Text('Plus zmiany (line-up, bilety, odwołania) w eventach z planem, gwiazdką albo Twoim artystą.',
-                style: small),
+            Text(
+              'Plus zmiany (line-up, bilety, odwołania) w eventach z planem, gwiazdką albo Twoim artystą.',
+              style: small,
+            ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               secondary: const Text('🇯🇵', style: TextStyle(fontSize: 22)),
@@ -257,6 +270,14 @@ class _NotifyCardState extends State<_NotifyCard> {
               subtitle: Text('Nowości z zakładki Japonia, według tych samych zasad.', style: small),
               value: s.notifyJapan,
               onChanged: (v) => s.setNotify(japan: v),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.library_music_rounded),
+              title: const Text('Nowa muzyka'),
+              subtitle: Text('Ciche powiadomienie o nowych kawałkach Twoich artystów i propozycjach.', style: small),
+              value: s.notifyMusic,
+              onChanged: (v) => s.setNotify(music: v),
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -267,7 +288,16 @@ class _NotifyCardState extends State<_NotifyCard> {
                 underline: const SizedBox(),
                 items: [
                   for (final h in const [1, 3, 6, 12, 24])
-                    DropdownMenuItem(value: h, child: Text(h == 1 ? 'godzinę' : h == 24 ? 'dzień' : '$h godz.')),
+                    DropdownMenuItem(
+                      value: h,
+                      child: Text(
+                        h == 1
+                            ? 'godzinę'
+                            : h == 24
+                            ? 'dzień'
+                            : '$h godz.',
+                      ),
+                    ),
                 ],
                 onChanged: (v) => v == null ? null : s.setNotify(hours: v),
               ),
@@ -325,9 +355,13 @@ class _NotifyCardState extends State<_NotifyCard> {
                         final n = await checks.checkNow();
                         if (!context.mounted) return;
                         setState(() => _checking = false);
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text(n == 0 ? 'Nic nowego. Hmph, nie moja wina.' : 'Nowości: $n, patrz powiadomienie!'),
-                        ));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              n == 0 ? 'Nic nowego. Hmph, nie moja wina.' : 'Nowości: $n, patrz powiadomienie!',
+                            ),
+                          ),
+                        );
                       },
               ),
             ),
@@ -419,29 +453,36 @@ class _SyncCardState extends State<_SyncCard> {
               contentPadding: EdgeInsets.zero,
               leading: s.syncing
                   ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5))
-                  : Icon(s.syncError == null ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
-                      color: s.syncError == null ? s.accent : theme.colorScheme.error),
+                  : Icon(
+                      s.syncError == null ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+                      color: s.syncError == null ? s.accent : theme.colorScheme.error,
+                    ),
               title: Text(s.syncError ?? (s.syncing ? 'Synchronizuję…' : 'Synchronizacja włączona')),
               subtitle: Text(
                 [
-                  if (s.lastSync != null) 'Ostatnio: ${formatDay(s.lastSync!)} ${TimeOfDay.fromDateTime(s.lastSync!).format(context)}',
+                  if (s.lastSync != null)
+                    'Ostatnio: ${formatDay(s.lastSync!)} ${TimeOfDay.fromDateTime(s.lastSync!).format(context)}',
                   if (s.syncGistId != null) 'Gist: ${s.syncGistId}',
                   '${s.entries.values.where((e) => !e.isEmpty).length} eventów z decyzją',
                 ].join(' · '),
               ),
             ),
-            Wrap(spacing: 10, runSpacing: 10, children: [
-              FilledButton.icon(
-                icon: const Icon(Icons.sync_rounded),
-                label: const Text('Synchronizuj teraz'),
-                onPressed: s.syncing ? null : s.syncNow,
-              ),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.link_off_rounded),
-                label: const Text('Wyłącz'),
-                onPressed: () => s.setSyncToken(null),
-              ),
-            ]),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                FilledButton.icon(
+                  icon: const Icon(Icons.sync_rounded),
+                  label: const Text('Synchronizuj teraz'),
+                  onPressed: s.syncing ? null : s.syncNow,
+                ),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.link_off_rounded),
+                  label: const Text('Wyłącz'),
+                  onPressed: () => s.setSyncToken(null),
+                ),
+              ],
+            ),
           ],
           const Divider(height: 28),
           SwitchListTile(
@@ -477,7 +518,9 @@ class _Slider extends StatelessWidget {
     return Row(
       children: [
         SizedBox(width: 150, child: Text(label)),
-        Expanded(child: Slider(value: value.clamp(0, max), max: max, onChanged: onChanged)),
+        Expanded(
+          child: Slider(value: value.clamp(0, max), max: max, onChanged: onChanged),
+        ),
         SizedBox(width: 44, child: Text(display, textAlign: TextAlign.end)),
       ],
     );

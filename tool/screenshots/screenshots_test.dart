@@ -62,30 +62,80 @@ void main() {
         ];
         e['updatedAt'] = '2026-10-01';
         e['changeNote'] = 'Doszedł koncert w Lizbonie';
-        e['about'] = 'Wirtualna piosenkarka Vocaloid od Crypton Future Media. Znasz ją z tysięcy piosenek producentów '
+        e['about'] =
+            'Wirtualna piosenkarka Vocaloid od Crypton Future Media. Znasz ją z tysięcy piosenek producentów '
             'takich jak DECO*27, ryo (supercell) czy wowaka, z Project SEKAI i z Magical Mirai.';
         e['hits'] = ['Ievan Polkka', 'World is Mine', 'Rolling Girl', 'Senbonzakura', 'Vampire'];
       }
     }
     (raw['events'] as List).addAll([
       {
-        'id': '2027-03-sana-natori-bakutan', 'artist': 'Natori Sana', 'title': 'BAKUTAN 2027', 'kind': 'koncert',
-        'tier': 3, 'region': 'JP', 'dateStart': '2027-03-14',
-        'stops': [{'date': '2027-03-14', 'city': 'Tokio', 'cc': 'JP', 'venue': 'Ariake Arena'}],
+        'id': '2027-03-sana-natori-bakutan',
+        'artist': 'Natori Sana',
+        'title': 'BAKUTAN 2027',
+        'kind': 'koncert',
+        'tier': 3,
+        'region': 'JP',
+        'dateStart': '2027-03-14',
+        'stops': [
+          {'date': '2027-03-14', 'city': 'Tokio', 'cc': 'JP', 'venue': 'Ariake Arena'},
+        ],
         'about': 'VTuberka i „przedszkolanka” znana z hitu „Hoshi ni Natte”; Bakutan to jej coroczny wielki lajw.',
         'hits': ['Hoshi ni Natte', 'Mahou no Kotoba'],
       },
       {
-        'id': '2027-03-hololive-fes', 'artist': 'hololive 6th fes.', 'title': 'Color Rise Harmony', 'kind': 'festiwal',
-        'tier': 3, 'region': 'JP', 'dateStart': '2027-03-20', 'dateEnd': '2027-03-21',
-        'stops': [{'date': '2027-03-20', 'city': 'Chiba', 'cc': 'JP', 'venue': 'Makuhari Messe'}],
+        'id': '2027-03-hololive-fes',
+        'artist': 'hololive 6th fes.',
+        'title': 'Color Rise Harmony',
+        'kind': 'festiwal',
+        'tier': 3,
+        'region': 'JP',
+        'dateStart': '2027-03-20',
+        'dateEnd': '2027-03-21',
+        'stops': [
+          {'date': '2027-03-20', 'city': 'Chiba', 'cc': 'JP', 'venue': 'Makuhari Messe'},
+        ],
         'lineup': ['Laplus Darknesss', 'Hakui Koyori', 'Sakura Miko', 'Usada Pekora'],
       },
     ]);
     final feed = jsonEncode(raw);
-    final client = MockClient((req) async => req.url.host.contains('github')
-        ? http.Response.bytes(utf8Bytes(feed), 200)
-        : http.Response('{"items":[]}', 200));
+    final music = jsonEncode({
+      'songs': [
+        {
+          'id': 'laplus-iosys-love-call',
+          'title': 'Onee-sama♡Love Call',
+          'artist': 'Laplus Darknesss × IOSYS',
+          'released': '2026-10-01',
+          'kind': 'singiel',
+          'pick': true,
+          'url': 'https://www.youtube.com/@LaplusDarknesss',
+          'about': 'La+ to szefowa holoX z hololive; IOSYS to doujin-legenda od „Marisa Stole the Precious Thing”.',
+          'songAbout': 'Słodko-chaotyczny denpa z typowym dla IOSYS tempem, idealny do zapętlania.',
+        },
+        {
+          'id': 'deco27-new',
+          'title': 'Hibana (Reloaded)',
+          'artist': 'DECO*27',
+          'released': '2026-09-30',
+          'kind': 'singiel',
+          'about': 'Jeden z najpopularniejszych producentów Vocaloid, autor „Rabbit Hole”.',
+          'songAbout': 'Nowa wersja klasyka z Miku, mocniejszy rockowy miks.',
+        },
+        {
+          'id': 'kz-livetune',
+          'title': 'Starlight Melody',
+          'artist': 'kz (livetune)',
+          'released': '2026-09-27',
+          'kind': 'album',
+          'about': 'Twórca „Tell Your World”, przy którym Miku trafiła do reklamy Google Chrome.',
+        },
+      ],
+    });
+    final client = MockClient(
+      (req) async => req.url.host.contains('github')
+          ? http.Response.bytes(utf8Bytes(req.url.path.endsWith('music.json') ? music : feed), 200)
+          : http.Response('{"items":[]}', 200),
+    );
     final s = AppState(await SharedPreferences.getInstance(), feed: FeedService(client: client));
     await s.init();
     while (s.loading) {
@@ -96,6 +146,7 @@ void main() {
 
   for (final (name, size, tab) in [
     ('phone_radar', const Size(412, 915), null),
+    ('phone_music', const Size(412, 915), 'Muzyka'),
     ('phone_japan', const Size(412, 915), 'Japonia'),
     ('phone_calendar', const Size(412, 915), 'Kalendarz'),
     ('phone_artists', const Size(412, 915), 'Artyści'),
@@ -112,10 +163,15 @@ void main() {
       await tester.pumpWidget(WeebRadarApp(state: s!));
       await tester.pump(const Duration(seconds: 1));
       if (tab != null) {
-        if (const ['Artyści', 'Wygląd', 'Źródła'].contains(tab)) {
+        if (const ['Kalendarz', 'Artyści', 'Wygląd', 'Źródła'].contains(tab)) {
           await tester.tap(find.byIcon(Icons.more_horiz_rounded).first);
-          await tester.pump(const Duration(seconds: 1));
-          await tester.tap(find.text(tab).last);
+          for (var i = 0; i < 10; i++) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
+          await tester.tap(find.widgetWithText(ListTile, tab));
+          for (var i = 0; i < 10; i++) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
         } else {
           await tester.tap(find.byIcon(_iconFor(tab)).first);
         }
@@ -135,10 +191,11 @@ void main() {
 List<int> utf8Bytes(String s) => const Utf8Encoder().convert(s);
 
 IconData _iconFor(String tab) => switch (tab) {
-      'Kalendarz' => Icons.calendar_month_outlined,
-      'Japonia' => Icons.temple_buddhist_outlined,
-      'Artyści' => Icons.headphones_outlined,
-      'Wygląd' => Icons.palette_outlined,
-      'Plany' => Icons.event_available_outlined,
-      _ => Icons.radar_outlined,
-    };
+  'Kalendarz' => Icons.calendar_month_outlined,
+  'Japonia' => Icons.temple_buddhist_outlined,
+  'Muzyka' => Icons.library_music_outlined,
+  'Artyści' => Icons.headphones_outlined,
+  'Wygląd' => Icons.palette_outlined,
+  'Plany' => Icons.event_available_outlined,
+  _ => Icons.radar_outlined,
+};
