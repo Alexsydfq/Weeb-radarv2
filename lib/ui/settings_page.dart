@@ -1,7 +1,10 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
 
+import '../background/background.dart';
 import '../data/app_state.dart';
 import '../data/defaults.dart';
 import 'app_scope.dart';
@@ -179,6 +182,8 @@ class SettingsPage extends StatelessWidget {
             ],
           ),
         ),
+        const SectionTitle('Powiadomienia'),
+        const _NotifyCard(),
         const SectionTitle('Synchronizacja telefon ↔ komputer'),
         const _SyncCard(),
         const SizedBox(height: 18),
@@ -189,6 +194,117 @@ class SettingsPage extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Powiadomienia o nowych eventach sprawdzanych w tle.
+class _NotifyCard extends StatefulWidget {
+  const _NotifyCard();
+
+  @override
+  State<_NotifyCard> createState() => _NotifyCardState();
+}
+
+class _NotifyCardState extends State<_NotifyCard> {
+  bool _checking = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final theme = Theme.of(context);
+    final small = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    final windows = !kIsWeb && Platform.isWindows;
+    final checks = s.backgroundChecks is BackgroundChecks ? s.backgroundChecks as BackgroundChecks : null;
+
+    return Glass(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: const Icon(Icons.notifications_active_rounded),
+            title: const Text('Powiadamiaj o nowościach'),
+            subtitle: Text(
+              windows
+                  ? 'Sprawdzam w tle, dopóki apka działa (też schowana w zasobniku obok zegara).'
+                  : 'Sprawdzam w tle, nawet gdy apka jest zamknięta. Android może to trochę przesunąć, żeby oszczędzać baterię.',
+              style: small,
+            ),
+            value: s.notifyEnabled,
+            onChanged: (v) => s.setNotify(enabled: v),
+          ),
+          if (s.notifyEnabled) ...[
+            const SizedBox(height: 4),
+            Text('O czym', style: theme.textTheme.labelLarge),
+            const SizedBox(height: 6),
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(value: true, label: Text('Tylko Spotify'), icon: Icon(Icons.headphones_rounded)),
+                ButtonSegment(value: false, label: Text('Cały „Dla mnie”'), icon: Icon(Icons.favorite_rounded)),
+              ],
+              selected: {s.notifySpotifyOnly},
+              onSelectionChanged: (v) => s.setNotify(spotifyOnly: v.first),
+            ),
+            const SizedBox(height: 6),
+            Text('Plus zmiany (line-up, bilety, odwołania) w eventach z planem, gwiazdką albo Twoim artystą.',
+                style: small),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.schedule_rounded),
+              title: const Text('Sprawdzaj co'),
+              trailing: DropdownButton<int>(
+                value: const [1, 3, 6, 12, 24].contains(s.notifyHours) ? s.notifyHours : 6,
+                underline: const SizedBox(),
+                items: [
+                  for (final h in const [1, 3, 6, 12, 24])
+                    DropdownMenuItem(value: h, child: Text(h == 1 ? 'godzinę' : h == 24 ? 'dzień' : '$h godz.')),
+                ],
+                onChanged: (v) => v == null ? null : s.setNotify(hours: v),
+              ),
+            ),
+          ],
+          if (windows) ...[
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.minimize_rounded),
+              title: const Text('Zamykanie chowa do zasobnika'),
+              subtitle: Text('Krzyżyk chowa okno obok zegara. Zakończysz z menu ikonki.', style: small),
+              value: s.trayOnClose,
+              onChanged: (v) => s.setNotify(tray: v),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.power_settings_new_rounded),
+              title: const Text('Uruchamiaj z Windowsem'),
+              subtitle: Text('Startuje schowana w zasobniku i od razu sprawdza nowości.', style: small),
+              value: s.autostart,
+              onChanged: (v) => s.setNotify(startup: v),
+            ),
+          ],
+          if (checks != null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                icon: _checking
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.radar_rounded),
+                label: const Text('Sprawdź nowości teraz'),
+                onPressed: _checking || !s.notifyEnabled
+                    ? null
+                    : () async {
+                        setState(() => _checking = true);
+                        final n = await checks.checkNow();
+                        if (!context.mounted) return;
+                        setState(() => _checking = false);
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(n == 0 ? 'Nic nowego. Hmph, nie moja wina.' : 'Nowości: $n, patrz powiadomienie!'),
+                        ));
+                      },
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

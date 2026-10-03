@@ -49,6 +49,21 @@ class AppState extends ChangeNotifier {
   Plan? planOf(String id) => entries[id]?.plan;
   bool hideNotGoing = false;
 
+  // ---------- powiadomienia ----------
+  bool notifyEnabled = true;
+
+  /// Tylko Spotify albo cały gust („Dla mnie”).
+  bool notifySpotifyOnly = false;
+
+  /// Co ile godzin sprawdzać nowości w tle.
+  int notifyHours = 6;
+
+  /// Windows: zamknięcie okna chowa apkę do zasobnika, żeby dalej sprawdzała.
+  bool trayOnClose = true;
+
+  /// Windows: uruchamiaj (schowaną) razem z systemem.
+  bool autostart = false;
+
   // ---------- synchronizacja ----------
   String? syncToken;
   String? syncGistId;
@@ -151,6 +166,11 @@ class AppState extends ChangeNotifier {
       }
     }
     hideNotGoing = p.getBool('plans.hideNotGoing') ?? hideNotGoing;
+    notifyEnabled = p.getBool('notify.enabled') ?? notifyEnabled;
+    notifySpotifyOnly = p.getBool('notify.spotifyOnly') ?? notifySpotifyOnly;
+    notifyHours = p.getInt('notify.hours') ?? notifyHours;
+    trayOnClose = p.getBool('win.tray') ?? trayOnClose;
+    autostart = p.getBool('win.autostart') ?? autostart;
     syncToken = p.getString('sync.token');
     syncGistId = p.getString('sync.gist');
     final ls = p.getString('sync.last');
@@ -213,9 +233,12 @@ class AppState extends ChangeNotifier {
     }).toList();
   }
 
-  Future<void> refresh() async {
+  /// Wczytuje same ustawienia (bez sieci) — dla sprawdzania w tle.
+  void loadSettings() => _loadPrefs();
+
+  Future<void> refresh({bool sync = true}) async {
     if (loading) return;
-    unawaited(syncNow());
+    if (sync) unawaited(syncNow());
     loading = true;
     lastError = null;
     notifyListeners();
@@ -399,6 +422,22 @@ class AppState extends ChangeNotifier {
     for (final id in hidden) {
       _edit(id, (e) => e.copyWith(hidden: false, at: e.at));
     }
+  }
+
+  /// Ustawiane w main(): pozwala ekranowi ustawień odpalić sprawdzenie od ręki.
+  Object? backgroundChecks;
+
+  /// Wołane po zmianie ustawień powiadomień (planowanie w tle, autostart itp.).
+  VoidCallback? onNotifySettingsChanged;
+
+  void setNotify({bool? enabled, bool? spotifyOnly, int? hours, bool? tray, bool? startup}) {
+    if (enabled != null) _prefs.setBool('notify.enabled', notifyEnabled = enabled);
+    if (spotifyOnly != null) _prefs.setBool('notify.spotifyOnly', notifySpotifyOnly = spotifyOnly);
+    if (hours != null) _prefs.setInt('notify.hours', notifyHours = hours);
+    if (tray != null) _prefs.setBool('win.tray', trayOnClose = tray);
+    if (startup != null) _prefs.setBool('win.autostart', autostart = startup);
+    notifyListeners();
+    onNotifySettingsChanged?.call();
   }
 
   void setHideNotGoing(bool v) {

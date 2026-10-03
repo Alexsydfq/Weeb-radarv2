@@ -1,19 +1,38 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'background/background.dart';
+import 'background/desktop.dart';
+import 'background/notifications.dart';
 import 'data/app_state.dart';
 import 'ui/app_scope.dart';
 import 'ui/shell.dart';
 import 'ui/theme.dart';
 
-Future<void> main() async {
+Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('pl');
   final prefs = await SharedPreferences.getInstance();
   final state = AppState(prefs);
   await state.init();
+
+  final checks = BackgroundChecks(state, prefs);
+  final desktop = !kIsWeb && Platform.isWindows ? Desktop(state, checks) : null;
+  // Kliknięcie powiadomienia na Windowsie wyciąga okno z zasobnika.
+  await Notifier.init(onTap: desktop == null ? null : () => unawaited(Desktop.show()));
+  await desktop?.start(hidden: args.contains(Desktop.startHiddenFlag));
+  unawaited(checks.start().then((_) async {
+    // Na Windowsie sprawdzamy też od razu po starcie (np. z autostartu).
+    if (desktop != null) await checks.checkNow();
+  }));
+  state.backgroundChecks = checks;
+
   runApp(WeebRadarApp(state: state));
 }
 

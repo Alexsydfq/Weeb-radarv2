@@ -24,6 +24,12 @@ Aplikacja na **Androida i Windowsa** (Flutter), która wyszukuje koncerty, trasy
   - skróty do małych eventów bez API (Vocafest UK & Ireland, MIKU EXPO, JaME, Tokyo Noizu) i własne eventy dodawane ręcznie.
 - **Wygląd**: własne tło z pliku **PNG, JPG, GIF (animowany), WebP, BMP**, z rozmyciem, przyciemnieniem, trybem wypełnij/zmieść/kafelki, przezroczystością kart, 10 kolorami akcentu (Miku, Teto, Luka...), motywem jasnym/ciemnym i Twoim krajem.
 
+## Powiadomienia
+
+- **Android:** apka sprawdza feed w tle (WorkManager), także gdy jest zamknięta, i pokazuje powiadomienie o nowych eventach „Dla mnie” (albo tylko ze Spotify) oraz o zmianach w eventach, które Cię obchodzą. Przy pierwszym starcie zapyta o zgodę na powiadomienia.
+- **Windows:** sprawdza, dopóki apka działa; krzyżyk chowa ją do zasobnika obok zegara, a opcja „Uruchamiaj z Windowsem” startuje ją schowaną razem z systemem.
+- Ustawienia: Wygląd → Powiadomienia (co ile godzin, o czym, „Sprawdź nowości teraz”).
+
 ## Pobieranie
 
 GitHub Actions buduje oba warianty przy każdym pushu:
