@@ -5,29 +5,19 @@ class EventStop {
   final DateTime date;
   final String venue;
 
-  const EventStop({
-    required this.cc,
-    required this.city,
-    required this.date,
-    required this.venue,
-  });
+  const EventStop({required this.cc, required this.city, required this.date, required this.venue});
 
   factory EventStop.fromJson(Map<String, dynamic> j) => EventStop(
-        cc: (j['cc'] ?? '').toString(),
-        city: (j['city'] ?? '').toString(),
-        date: _parseDate(j['date']) ?? DateTime(1970),
-        venue: (j['venue'] ?? '').toString(),
-      );
+    cc: (j['cc'] ?? '').toString(),
+    city: (j['city'] ?? '').toString(),
+    date: _parseDate(j['date']) ?? DateTime(1970),
+    venue: (j['venue'] ?? '').toString(),
+  );
 
   /// Klucz przystanku do zapamiętania wyboru („jadę tutaj”).
   String get key => '${_fmt(date)}|$city';
 
-  Map<String, dynamic> toJson() => {
-        'cc': cc,
-        'city': city,
-        'date': _fmt(date),
-        'venue': venue,
-      };
+  Map<String, dynamic> toJson() => {'cc': cc, 'city': city, 'date': _fmt(date), 'venue': venue};
 }
 
 /// Jedna ważna informacja o evencie, np. „Bilety” → „od 59 €, sprzedaż od 1.11”.
@@ -78,6 +68,12 @@ class RadarEvent {
   /// Najpopularniejsze kawałki artysty (albo gwiazd festiwalu).
   final List<String> hits;
 
+  /// Kawałki grane na ostatnich koncertach (setlista z tej albo poprzedniej trasy).
+  final List<String> setlist;
+
+  /// Skąd jest setlista, np. „MIKU EXPO 2025 North America, Nowy Jork”.
+  final String? setlistFrom;
+
   /// Przystanek trasy, który sam wybrałeś („jadę tutaj”).
   final EventStop? chosen;
 
@@ -104,6 +100,8 @@ class RadarEvent {
     this.changeNote,
     this.about,
     this.hits = const [],
+    this.setlist = const [],
+    this.setlistFrom,
     this.chosen,
     this.region,
   });
@@ -114,40 +112,40 @@ class RadarEvent {
 
   /// Ten sam event z wybranym przystankiem (albo bez wyboru).
   RadarEvent withChosen(EventStop? stop) => RadarEvent(
-        id: id,
-        artist: artist,
-        title: title,
-        kind: kind,
-        tier: tier,
-        start: start,
-        end: end,
-        note: note,
-        stops: stops,
-        url: url,
-        tickets: tickets,
-        foundAt: foundAt,
-        origin: origin,
-        lineup: lineup,
-        facts: facts,
-        updatedAt: updatedAt,
-        changeNote: changeNote,
-        about: about,
-        hits: hits,
-        chosen: stop,
-        region: region,
-      );
+    id: id,
+    artist: artist,
+    title: title,
+    kind: kind,
+    tier: tier,
+    start: start,
+    end: end,
+    note: note,
+    stops: stops,
+    url: url,
+    tickets: tickets,
+    foundAt: foundAt,
+    origin: origin,
+    lineup: lineup,
+    facts: facts,
+    updatedAt: updatedAt,
+    changeNote: changeNote,
+    about: about,
+    hits: hits,
+    setlist: setlist,
+    setlistFrom: setlistFrom,
+    chosen: stop,
+    region: region,
+  );
 
-  factory RadarEvent.fromJson(Map<String, dynamic> j,
-      {EventOrigin origin = EventOrigin.feed}) {
-    final stops = ((j['stops'] as List?) ?? const [])
-        .whereType<Map>()
-        .map((s) => EventStop.fromJson(s.cast<String, dynamic>()))
-        .toList()
-      ..sort((a, b) => a.date.compareTo(b.date));
-    final start = _parseDate(j['dateStart']) ??
-        (stops.isNotEmpty ? stops.first.date : DateTime(1970));
-    final end = _parseDate(j['dateEnd']) ??
-        (stops.isNotEmpty ? stops.last.date : start);
+  factory RadarEvent.fromJson(Map<String, dynamic> j, {EventOrigin origin = EventOrigin.feed}) {
+    final stops =
+        ((j['stops'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((s) => EventStop.fromJson(s.cast<String, dynamic>()))
+            .toList()
+          ..sort((a, b) => a.date.compareTo(b.date));
+    final start = _parseDate(j['dateStart']) ?? (stops.isNotEmpty ? stops.first.date : DateTime(1970));
+    final end = _parseDate(j['dateEnd']) ?? (stops.isNotEmpty ? stops.last.date : start);
     return RadarEvent(
       id: (j['id'] ?? '${j['artist']}-${j['dateStart']}').toString(),
       artist: (j['artist'] ?? '').toString(),
@@ -162,10 +160,7 @@ class RadarEvent {
       tickets: _nonEmpty(j['tickets']),
       foundAt: _parseDate(j['foundAt']),
       origin: origin,
-      lineup: ((j['lineup'] as List?) ?? const [])
-          .map((x) => x.toString().trim())
-          .where((x) => x.isNotEmpty)
-          .toList(),
+      lineup: ((j['lineup'] as List?) ?? const []).map((x) => x.toString().trim()).where((x) => x.isNotEmpty).toList(),
       facts: [
         for (final f in (j['facts'] as List?) ?? const [])
           if (f is Map && _nonEmpty(f['k']) != null && _nonEmpty(f['v']) != null)
@@ -174,35 +169,39 @@ class RadarEvent {
       updatedAt: _parseDate(j['updatedAt']),
       changeNote: _nonEmpty(j['changeNote']),
       about: _nonEmpty(j['about']),
-      hits: ((j['hits'] as List?) ?? const [])
-          .map((x) => x.toString().trim())
-          .where((x) => x.isNotEmpty)
-          .toList(),
+      hits: _strings(j['hits']),
+      setlist: _strings(j['setlist']),
+      setlistFrom: _nonEmpty(j['setlistFrom']),
       region: _nonEmpty(j['region']),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'artist': artist,
-        'title': title,
-        'kind': kind,
-        'tier': tier,
-        'dateStart': _fmt(start),
-        'dateEnd': _fmt(end),
-        'note': note,
-        'stops': stops.map((s) => s.toJson()).toList(),
-        if (url != null) 'url': url,
-        if (tickets != null) 'tickets': tickets,
-        if (foundAt != null) 'foundAt': _fmt(foundAt!),
-        if (lineup.isNotEmpty) 'lineup': lineup,
-        if (facts.isNotEmpty) 'facts': facts.map((f) => f.toJson()).toList(),
-        if (updatedAt != null) 'updatedAt': _fmt(updatedAt!),
-        if (changeNote != null) 'changeNote': changeNote,
-        if (about != null) 'about': about,
-        if (hits.isNotEmpty) 'hits': hits,
-        if (region != null) 'region': region,
-      };
+    'id': id,
+    'artist': artist,
+    'title': title,
+    'kind': kind,
+    'tier': tier,
+    'dateStart': _fmt(start),
+    'dateEnd': _fmt(end),
+    'note': note,
+    'stops': stops.map((s) => s.toJson()).toList(),
+    if (url != null) 'url': url,
+    if (tickets != null) 'tickets': tickets,
+    if (foundAt != null) 'foundAt': _fmt(foundAt!),
+    if (lineup.isNotEmpty) 'lineup': lineup,
+    if (facts.isNotEmpty) 'facts': facts.map((f) => f.toJson()).toList(),
+    if (updatedAt != null) 'updatedAt': _fmt(updatedAt!),
+    if (changeNote != null) 'changeNote': changeNote,
+    if (about != null) 'about': about,
+    if (hits.isNotEmpty) 'hits': hits,
+    if (setlist.isNotEmpty) 'setlist': setlist,
+    if (setlistFrom != null) 'setlistFrom': setlistFrom,
+    if (region != null) 'region': region,
+  };
+
+  static List<String> _strings(Object? v) =>
+      ((v is List) ? v : const []).map((x) => x.toString().trim()).where((x) => x.isNotEmpty).toList();
 
   String get displayTitle => title.trim().isEmpty ? artist : title;
 

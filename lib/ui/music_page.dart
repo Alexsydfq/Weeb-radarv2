@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/song.dart';
 import 'app_scope.dart';
+import 'refresh.dart';
 import 'util.dart';
 import 'widgets/glass.dart';
 
@@ -32,14 +33,24 @@ class _MusicPageState extends State<MusicPage> {
     }).toList();
 
     return RefreshIndicator(
-      onRefresh: s.refresh,
+      onRefresh: () => refreshAll(context),
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
           Padding(
             padding: const EdgeInsets.only(left: 4),
-            child: Text('Nowa muzyka', style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w900)),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Nowa muzyka',
+                    style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w900),
+                  ),
+                ),
+                RefreshButton(loading: s.loading),
+              ],
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 4, 4, 12),
@@ -66,17 +77,19 @@ class _MusicPageState extends State<MusicPage> {
           if (list.isEmpty)
             Padding(
               padding: const EdgeInsets.all(28),
-              child: Column(children: [
-                const Text('♪(´ε｀ )', style: TextStyle(fontSize: 26)),
-                const SizedBox(height: 10),
-                Text(
-                  s.songs.isEmpty
-                      ? 'Jeszcze pusto. Skan wrzuca nowe kawałki raz dziennie rano, więc zajrzyj jutro.'
-                      : 'Nic tu nie pasuje. Zmień filtr, baka.',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyLarge,
-                ),
-              ]),
+              child: Column(
+                children: [
+                  const Text('♪(´ε｀ )', style: TextStyle(fontSize: 26)),
+                  const SizedBox(height: 10),
+                  Text(
+                    s.songs.isEmpty
+                        ? 'Jeszcze pusto. Skan wrzuca nowe kawałki raz dziennie rano, więc zajrzyj jutro.'
+                        : 'Nic tu nie pasuje. Zmień filtr, baka.',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyLarge,
+                  ),
+                ],
+              ),
             ),
           for (final x in list) _SongCard(song: x),
         ],
@@ -110,17 +123,29 @@ class _SongCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Wrap(spacing: 6, runSpacing: 6, children: [
-                    Pill(song.kind, icon: Icons.album_rounded),
-                    if (mine) Pill(rank < 9999 ? 'Spotify #$rank' : 'Twój artysta', icon: Icons.headphones_rounded, color: spotifyGreen),
-                    if (song.pick) const Pill('propozycja', icon: Icons.auto_awesome_rounded, color: Color(0xFFB98CFF)),
-                    Pill(formatDay(song.date), icon: Icons.today_rounded),
-                  ]),
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      Pill(song.kind, icon: Icons.album_rounded),
+                      if (mine)
+                        Pill(
+                          rank < 9999 ? 'Spotify #$rank' : 'Twój artysta',
+                          icon: Icons.headphones_rounded,
+                          color: spotifyGreen,
+                        ),
+                      if (song.pick)
+                        const Pill('propozycja', icon: Icons.auto_awesome_rounded, color: Color(0xFFB98CFF)),
+                      Pill(formatDay(song.date), icon: Icons.today_rounded),
+                    ],
+                  ),
                 ),
                 IconButton(
                   tooltip: fav ? 'Usuń gwiazdkę' : 'Daj gwiazdkę',
-                  icon: Icon(fav ? Icons.star_rounded : Icons.star_outline_rounded,
-                      color: fav ? const Color(0xFFFFD23F) : null),
+                  icon: Icon(
+                    fav ? Icons.star_rounded : Icons.star_outline_rounded,
+                    color: fav ? const Color(0xFFFFD23F) : null,
+                  ),
                   onPressed: () => s.toggleSongFav(song),
                 ),
               ],
@@ -132,37 +157,38 @@ class _SongCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(song.songAbout!, style: theme.textTheme.bodyMedium),
             ],
-            if (song.about != null) ...[
-              const SizedBox(height: 6),
-              Text(song.about!, style: small),
-            ],
+            if (song.about != null) ...[const SizedBox(height: 6), Text(song.about!, style: small)],
             const SizedBox(height: 8),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              FilledButton.tonalIcon(
-                icon: const Icon(Icons.play_circle_fill_rounded, color: spotifyGreen),
-                label: const Text('Spotify'),
-                onPressed: () => openLink(
-                  context,
-                  'https://open.spotify.com/search/${Uri.encodeComponent('${song.artist} ${song.title}')}',
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilledButton.tonalIcon(
+                  icon: const Icon(Icons.play_circle_fill_rounded, color: spotifyGreen),
+                  label: const Text('Spotify'),
+                  onPressed: () => openLink(
+                    context,
+                    'https://open.spotify.com/search/${Uri.encodeComponent('${song.artist} ${song.title}')}',
+                  ),
                 ),
-              ),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.smart_display_rounded),
-                label: const Text('YouTube'),
-                onPressed: () => openLink(
-                  context,
-                  song.url != null && song.url!.contains('youtu')
-                      ? song.url!
-                      : 'https://www.youtube.com/results?search_query=${Uri.encodeQueryComponent('${song.artist} ${song.title}')}',
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.smart_display_rounded),
+                  label: const Text('YouTube'),
+                  onPressed: () => openLink(
+                    context,
+                    song.url != null && song.url!.contains('youtu')
+                        ? song.url!
+                        : 'https://www.youtube.com/results?search_query=${Uri.encodeQueryComponent('${song.artist} ${song.title}')}',
+                  ),
                 ),
-              ),
-              if (song.url != null && !song.url!.contains('youtu'))
-                TextButton.icon(
-                  icon: const Icon(Icons.open_in_new_rounded),
-                  label: const Text('Źródło'),
-                  onPressed: () => openLink(context, song.url!),
-                ),
-            ]),
+                if (song.url != null && !song.url!.contains('youtu'))
+                  TextButton.icon(
+                    icon: const Icon(Icons.open_in_new_rounded),
+                    label: const Text('Źródło'),
+                    onPressed: () => openLink(context, song.url!),
+                  ),
+              ],
+            ),
           ],
         ),
       ),

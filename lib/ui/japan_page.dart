@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/event.dart';
 import 'app_scope.dart';
+import 'refresh.dart';
 import 'util.dart';
 import 'widgets/event_card.dart';
 import 'widgets/glass.dart';
@@ -51,18 +52,23 @@ class _JapanPageState extends State<JapanPage> {
     }
 
     return RefreshIndicator(
-      onRefresh: s.refresh,
+      onRefresh: () => refreshAll(context),
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
           Padding(
             padding: const EdgeInsets.only(left: 4),
-            child: Row(children: [
-              const Text('🇯🇵', style: TextStyle(fontSize: 30)),
-              const SizedBox(width: 10),
-              Text('Japonia', style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w900)),
-            ]),
+            child: Row(
+              children: [
+                const Text('🇯🇵', style: TextStyle(fontSize: 30)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text('Japonia', style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w900)),
+                ),
+                RefreshButton(loading: s.loading),
+              ],
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 4, 4, 12),
@@ -102,17 +108,19 @@ class _JapanPageState extends State<JapanPage> {
           if (list.isEmpty)
             Padding(
               padding: const EdgeInsets.all(28),
-              child: Column(children: [
-                const Text('(￣ヘ￣;)', style: TextStyle(fontSize: 26)),
-                const SizedBox(height: 10),
-                Text(
-                  all.isEmpty
-                      ? 'Jeszcze nic z Japonii. Skan dorzuca je dwa razy w tygodniu, więc cierpliwości, baka.'
-                      : 'Nic nie pasuje do filtra. Spróbuj „Wszystko”.',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyLarge,
-                ),
-              ]),
+              child: Column(
+                children: [
+                  const Text('(￣ヘ￣;)', style: TextStyle(fontSize: 26)),
+                  const SizedBox(height: 10),
+                  Text(
+                    all.isEmpty
+                        ? 'Jeszcze nic z Japonii. Skan dorzuca je dwa razy w tygodniu, więc cierpliwości, baka.'
+                        : 'Nic nie pasuje do filtra. Spróbuj „Wszystko”.',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyLarge,
+                  ),
+                ],
+              ),
             ),
           for (final m in months.entries) ...[
             SectionTitle('${_cap(monthTitle.format(m.key))} (${m.value.length})'),

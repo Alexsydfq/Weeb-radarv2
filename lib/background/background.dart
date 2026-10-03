@@ -109,3 +109,25 @@ class BackgroundChecks {
 
   void dispose() => _timer?.cancel();
 }
+
+/// Przycisk „Odśwież wszystko”: feed eventów, nowa muzyka, VocaDB i dodatkowe źródła,
+/// synchronizacja planów i od razu sprawdzenie powiadomień. Zwraca krótki opis wyniku.
+Future<String> refreshEverything(AppState s) async {
+  while (s.loading) {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+  }
+  await s.refresh(sync: false);
+  await s.syncNow();
+  if (s.lastError != null) return s.lastError!;
+  if (!s.notifyEnabled) return 'Odświeżone. Powiadomienia masz wyłączone, więc nic nie dzwoni.';
+  final news = await collectNews(s, s.upcoming);
+  await Notifier.show(news);
+  final songs = await collectSongNews(s, s.songs);
+  await Notifier.showSongs(songs);
+  if (news.isEmpty && songs.isEmpty) return 'Odświeżone. Nic nowego od ostatniego razu.';
+  return 'Odświeżone: ${[if (news.isNotEmpty) '${news.length} ${news.length == 1 ? 'nowość' : 'nowości'} w eventach', if (songs.isNotEmpty) '${songs.length} ${songs.length == 1
+        ? 'nowy kawałek'
+        : songs.length < 5
+        ? 'nowe kawałki'
+        : 'nowych kawałków'}'].join(', ')}.';
+}

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/defaults.dart';
 import '../models/event.dart';
 import 'app_scope.dart';
+import 'refresh.dart';
 import 'event_detail.dart';
 import 'util.dart';
 import 'widgets/event_card.dart';
@@ -62,23 +63,23 @@ class _RadarPageState extends State<RadarPage> {
     final kinds = <String>{for (final e in upcoming) e.kind}.toList()..sort();
 
     // Na górze najpierw to, czego słuchasz na Spotify, potem reszta pod Twój gust.
-    final best = ([...upcoming.where(s.isForYou)]
-          ..sort((a, b) {
-            final bySpotify = (s.isSpotify(b) ? 1 : 0).compareTo(s.isSpotify(a) ? 1 : 0);
-            if (bySpotify != 0) return bySpotify;
-            final byScore = s.score(b).compareTo(s.score(a));
-            return byScore != 0 ? byScore : a.nextDate.compareTo(b.nextDate);
-          }))
-        .take(5)
-        .toList();
+    final best =
+        ([...upcoming.where(s.isForYou)]..sort((a, b) {
+              final bySpotify = (s.isSpotify(b) ? 1 : 0).compareTo(s.isSpotify(a) ? 1 : 0);
+              if (bySpotify != 0) return bySpotify;
+              final byScore = s.score(b).compareTo(s.score(a));
+              return byScore != 0 ? byScore : a.nextDate.compareTo(b.nextDate);
+            }))
+            .take(5)
+            .toList();
 
     return RefreshIndicator(
-      onRefresh: s.refresh,
+      onRefresh: () => refreshAll(context),
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
-            child: _Header(onRefresh: s.refresh, loading: s.loading),
+            child: _Header(onRefresh: () => refreshAll(context), loading: s.loading),
           ),
           if (s.lastError != null)
             SliverToBoxAdapter(
@@ -86,16 +87,17 @@ class _RadarPageState extends State<RadarPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Glass(
                   highlight: theme.colorScheme.error,
-                  child: Row(children: [
-                    Icon(Icons.wifi_off_rounded, color: theme.colorScheme.error),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(s.lastError!)),
-                  ]),
+                  child: Row(
+                    children: [
+                      Icon(Icons.wifi_off_rounded, color: theme.colorScheme.error),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(s.lastError!)),
+                    ],
+                  ),
                 ),
               ),
             ),
-          if (best.isNotEmpty)
-            SliverToBoxAdapter(child: _HeroCarousel(events: best)),
+          if (best.isNotEmpty) SliverToBoxAdapter(child: _HeroCarousel(events: best)),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -135,8 +137,15 @@ class _RadarPageState extends State<RadarPage> {
                         SegmentedButton<_Scope>(
                           segments: const [
                             ButtonSegment(
-                                value: _Scope.spotify, label: Text('Spotify'), icon: Icon(Icons.headphones_rounded)),
-                            ButtonSegment(value: _Scope.forYou, label: Text('Dla mnie'), icon: Icon(Icons.favorite_rounded)),
+                              value: _Scope.spotify,
+                              label: Text('Spotify'),
+                              icon: Icon(Icons.headphones_rounded),
+                            ),
+                            ButtonSegment(
+                              value: _Scope.forYou,
+                              label: Text('Dla mnie'),
+                              icon: Icon(Icons.favorite_rounded),
+                            ),
                             ButtonSegment(value: _Scope.all, label: Text('Wszystko'), icon: Icon(Icons.public_rounded)),
                           ],
                           selected: {_scope},
@@ -177,8 +186,7 @@ class _RadarPageState extends State<RadarPage> {
                       TextButton.icon(
                         icon: Icon(_sort == _Sort.date ? Icons.event_rounded : Icons.auto_awesome_rounded),
                         label: Text(_sort == _Sort.date ? 'Wg daty' : 'Wg dopasowania'),
-                        onPressed: () => setState(
-                            () => _sort = _sort == _Sort.date ? _Sort.match : _Sort.date),
+                        onPressed: () => setState(() => _sort = _sort == _Sort.date ? _Sort.match : _Sort.date),
                       ),
                     ],
                   ),
@@ -248,10 +256,10 @@ class _Header extends StatelessWidget {
     final greet = h < 5
         ? 'Czemu nie śpisz, baka?'
         : h < 12
-            ? 'Ohayō, Awex!'
-            : h < 18
-                ? 'Konnichiwa, Awex!'
-                : 'Konbanwa, Awex!';
+        ? 'Ohayō, Awex!'
+        : h < 18
+        ? 'Konnichiwa, Awex!'
+        : 'Konbanwa, Awex!';
     final updated = s.feedUpdated ?? s.lastRefresh;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 12, 4),
@@ -262,11 +270,15 @@ class _Header extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(greet, style: theme.textTheme.labelLarge?.copyWith(color: s.accent)),
-                Text('Weeb Radar',
-                    style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+                Text(
+                  'Weeb Radar',
+                  style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w900, letterSpacing: -0.5),
+                ),
                 if (updated != null)
-                  Text('Dane z ${formatDay(updated.toLocal())}',
-                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  Text(
+                    'Dane z ${formatDay(updated.toLocal())}',
+                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  ),
               ],
             ),
           ),
@@ -408,24 +420,35 @@ class _HeroCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(children: [
-                        spotify
-                            ? Pill(spotifyLabel(s.spotifyRank(event)).toUpperCase(),
-                                color: Colors.white, icon: Icons.headphones_rounded)
-                            : const Pill('POLECAM', color: Colors.white, icon: Icons.auto_awesome),
-                        const SizedBox(width: 6),
-                        Pill(countdown(event.nextDate), color: Colors.white, icon: Icons.timer_outlined),
-                      ]),
+                      Row(
+                        children: [
+                          spotify
+                              ? Pill(
+                                  spotifyLabel(s.spotifyRank(event)).toUpperCase(),
+                                  color: Colors.white,
+                                  icon: Icons.headphones_rounded,
+                                )
+                              : const Pill('POLECAM', color: Colors.white, icon: Icons.auto_awesome),
+                          const SizedBox(width: 6),
+                          Pill(countdown(event.nextDate), color: Colors.white, icon: Icons.timer_outlined),
+                        ],
+                      ),
                       const Spacer(),
-                      Text(event.artist,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.headlineSmall
-                              ?.copyWith(color: Colors.white, fontWeight: FontWeight.w900)),
-                      Text(event.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70)),
+                      Text(
+                        event.artist,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Text(
+                        event.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                      ),
                       const SizedBox(height: 6),
                       Text(
                         next != null
@@ -436,10 +459,12 @@ class _HeroCard extends StatelessWidget {
                         style: theme.textTheme.labelLarge?.copyWith(color: Colors.white),
                       ),
                       if (matched.isNotEmpty)
-                        Text('🎧 ${matched.join(', ')}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelMedium?.copyWith(color: Colors.white)),
+                        Text(
+                          '🎧 ${matched.join(', ')}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelMedium?.copyWith(color: Colors.white),
+                        ),
                     ],
                   ),
                 ),
@@ -464,22 +489,24 @@ class _Stats extends StatelessWidget {
     final home = events.where((e) => e.countries.any(s.isHome)).length;
     final soon = events.where((e) => e.nextDate.difference(todayDate()).inDays <= 30).length;
     Widget tile(String n, String label, IconData icon) => Expanded(
-          child: Glass(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-            child: Column(
-              children: [
-                Icon(icon, size: 20, color: s.accent),
-                const SizedBox(height: 4),
-                Text(n, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
-                Text(label,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.labelSmall),
-              ],
+      child: Glass(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        child: Column(
+          children: [
+            Icon(icon, size: 20, color: s.accent),
+            const SizedBox(height: 4),
+            Text(n, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelSmall,
             ),
-          ),
-        );
+          ],
+        ),
+      ),
+    );
     return Row(
       children: [
         tile('${events.length}', 'nadchodzące', Icons.event_available_rounded),

@@ -134,4 +134,16 @@ void main() {
     expect(s.rankOfEntry('Hatsune Miku'), 1);
     expect(RadarEvent.fromJson(e.toJson()).lineup, e.lineup);
   });
+
+  test('setlista przechodzi przez feed i cache', () {
+    final e = RadarEvent.fromJson({
+      'id': 'x', 'artist': 'Hatsune Miku', 'kind': 'trasa', 'dateStart': '2030-01-01', 'stops': [],
+      'setlist': ['Melt', ' ', 'Vampire'], 'setlistFrom': 'MIKU EXPO 2025',
+    });
+    expect(e.setlist, ['Melt', 'Vampire']);
+    final back = RadarEvent.fromJson(e.toJson());
+    expect(back.setlist, e.setlist);
+    expect(back.setlistFrom, 'MIKU EXPO 2025');
+    expect(back.withChosen(null).setlist, e.setlist);
+  });
 }

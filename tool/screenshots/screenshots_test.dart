@@ -66,6 +66,8 @@ void main() {
             'Wirtualna piosenkarka Vocaloid od Crypton Future Media. Znasz ją z tysięcy piosenek producentów '
             'takich jak DECO*27, ryo (supercell) czy wowaka, z Project SEKAI i z Magical Mirai.';
         e['hits'] = ['Ievan Polkka', 'World is Mine', 'Rolling Girl', 'Senbonzakura', 'Vampire'];
+        e['setlist'] = ['Vampire', 'Melt', 'Rolling Girl', 'Senbonzakura', 'Tell Your World', 'World is Mine'];
+        e['setlistFrom'] = 'MIKU EXPO 2025 North America, Nowy Jork';
       }
     }
     (raw['events'] as List).addAll([
@@ -152,6 +154,7 @@ void main() {
     ('phone_artists', const Size(412, 915), 'Artyści'),
     ('phone_plans', const Size(412, 915), 'Plany'),
     ('phone_event', const Size(412, 915), 'Plany'),
+    ('phone_event_songs', const Size(412, 915), 'Plany'),
     ('phone_look', const Size(412, 915), 'Wygląd'),
     ('windows_radar', const Size(1400, 900), null),
   ]) {
@@ -177,8 +180,13 @@ void main() {
         }
         await tester.pump(const Duration(seconds: 1));
       }
-      if (name == 'phone_event') {
+      if (name.startsWith('phone_event')) {
         await tester.tap(find.text('MIKU EXPO 2026 Europe').first);
+        await tester.pump(const Duration(seconds: 1));
+      }
+      if (name == 'phone_event_songs') {
+        await tester.dragUntilVisible(find.text('🎶 Mogą zagrać'), find.byType(ListView).last, const Offset(0, -200));
+        await tester.drag(find.byType(ListView).last, const Offset(0, -500));
         await tester.pump(const Duration(seconds: 1));
       }
       await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 200)));

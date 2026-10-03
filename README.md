@@ -8,15 +8,17 @@ Aplikacja na **Androida i Windowsa** (Flutter), która wyszukuje koncerty, trasy
 | ![Kalendarz](docs/screenshots/phone_calendar.png) | ![Wygląd](docs/screenshots/phone_look.png) |
 | ![Plany](docs/screenshots/phone_plans.png) | ![Event](docs/screenshots/phone_event.png) |
 | ![Nowa muzyka](docs/screenshots/phone_music.png) | ![Japonia](docs/screenshots/phone_japan.png) |
+| ![Mogą zagrać](docs/screenshots/phone_event_songs.png) | |
 
 > Zrzuty są generowane w teście bez internetu, więc japońskie znaki wyglądają tam jak kwadraciki. W aplikacji działa font M PLUS Rounded 1c z pełnym japońskim.
 
 ## Co umie
 
 - **Radar**: karuzela poleceń, statystyki, wyszukiwarka, filtry (Dla mnie / Wszystko, rodzaj, kraj), sortowanie po dacie albo dopasowaniu, odświeżanie przeciągnięciem.
-- **Szczegóły eventu**: „Kto to?” z krótkim opisem, skąd znasz artystę, i najpopularniejsze kawałki (klik otwiera Spotify). Na trasie stukasz miasto, na które jedziesz, i ten termin liczy się wszędzie (karty, kalendarz, powiadomienia); wybór synchronizuje się jak plany.
+- **Szczegóły eventu**: „Kto to?” z krótkim opisem, skąd znasz artystę, i „Mogą zagrać”: setlista z ostatnich koncertów (a bez niej największe hity), każdy kawałek otwiera Spotify. Na trasie stukasz miasto, na które jedziesz, i ten termin liczy się wszędzie (karty, kalendarz, powiadomienia); wybór synchronizuje się jak plany.
 - **Japonia**: osobna zakładka z eventami w Japonii (lajwy VTuberek, Vocaloid, J-core, MOGRA), żeby nie mieszały się z Europą. Ma własny przełącznik powiadomień.
 - **Nowa muzyka**: codziennie świeże kawałki Twoich artystów plus kilka propozycji spoza listy, z opisem twórcy i piosenki, linkami do Spotify i YouTube. Powiadomienia idą osobnym, cichym kanałem.
+- **Odśwież wszystko**: przycisk na Radarze, w Muzyce i w Japonii (albo przeciągnięcie w dół) od razu pobiera feed eventów i muzyki, VocaDB i dodatkowe źródła, synchronizuje plany i sprawdza powiadomienia. Samo szukanie w internecie robi skan w chmurze raz dziennie.
 - **Kalendarz**: każdy przystanek trasy osobno, pogrupowany miesiącami, z filtrem „tylko mój kraj”.
 - **Plany**: przy każdym evencie „Idę / Może / Zainteresowany / Nie idę” plus gwiazdka. Zakładka „Plany” zbiera to w jednym miejscu; „Nie idę” jest przygaszone (albo schowane z „Dla mnie”, jeśli tak ustawisz).
 - **Synchronizacja telefon ↔ komputer**: plany, gwiazdki i ukryte eventy siedzą w prywatnym GitHub Giście (plik `weeb-radar-sync.json`), bez żadnego serwera. Wygeneruj token na https://github.com/settings/personal-access-tokens/new z uprawnieniem *Account permissions → Gists → Read and write* (albo klasyczny token z zakresem `gist`) i wklej go w Wygląd → Synchronizacja na obu urządzeniach. Synchronizuje się przy starcie, przy odświeżeniu, po powrocie do apki i kilka sekund po każdej zmianie; przy konflikcie wygrywa nowsza zmiana.
@@ -77,7 +79,9 @@ flutter test tool/screenshots/screenshots_test.dart --update-goldens   # odświe
       "foundAt": "2026-10-02",
       "region": "JP (tylko Japonia, inaczej brak)",
       "about": "kto to i skąd go znasz",
-      "hits": ["Ievan Polkka", "World is Mine"]
+      "hits": ["Ievan Polkka", "World is Mine"],
+      "setlist": ["Vampire", "Melt"],
+      "setlistFrom": "MIKU EXPO 2025 North America, Nowy Jork"
     }
   ]
 }

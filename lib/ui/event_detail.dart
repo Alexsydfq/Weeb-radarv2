@@ -120,16 +120,18 @@ class EventDetailPage extends StatelessWidget {
                       ),
                       if (event.chosen != null) ...[
                         const SizedBox(height: 6),
-                        Row(children: [
-                          Icon(Icons.flight_takeoff_rounded, size: 20, color: kc),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Jedziesz: ${flagOf(event.chosen!.cc)} ${event.chosen!.city}, ${formatLong(event.chosen!.date)}',
-                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                        Row(
+                          children: [
+                            Icon(Icons.flight_takeoff_rounded, size: 20, color: kc),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Jedziesz: ${flagOf(event.chosen!.cc)} ${event.chosen!.city}, ${formatLong(event.chosen!.date)}',
+                                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                              ),
                             ),
-                          ),
-                        ]),
+                          ],
+                        ),
                       ],
                       if (matched.isNotEmpty || keywords.isNotEmpty) ...[
                         const SizedBox(height: 12),
@@ -197,37 +199,9 @@ class EventDetailPage extends StatelessWidget {
                     ),
                   ),
                 ],
-                if (event.about != null || event.hits.isNotEmpty) ...[
+                if (event.about != null) ...[
                   const SectionTitle('Kto to?'),
-                  Glass(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (event.about != null) SelectableText(event.about!, style: theme.textTheme.bodyLarge),
-                        if (event.hits.isNotEmpty) ...[
-                          if (event.about != null) const SizedBox(height: 12),
-                          Text(
-                            'Najpopularniejsze kawałki',
-                            style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              for (final h in event.hits)
-                                ActionChip(
-                                  avatar: const Icon(Icons.play_circle_fill_rounded, color: spotifyGreen),
-                                  label: Text(h),
-                                  tooltip: 'Posłuchaj w Spotify',
-                                  onPressed: () => openLink(context, spotifySearchUrl(event, h)),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
+                  Glass(child: SelectableText(event.about!, style: theme.textTheme.bodyLarge)),
                 ],
                 if (event.lineup.isNotEmpty) ...[
                   SectionTitle(
@@ -272,6 +246,8 @@ class EventDetailPage extends StatelessWidget {
                   const SectionTitle('Notatka'),
                   Glass(child: SelectableText(event.note, style: theme.textTheme.bodyLarge)),
                 ],
+                const SectionTitle('🎶 Mogą zagrać'),
+                Glass(child: _MayPlay(event: event)),
                 if (event.stops.isNotEmpty) ...[
                   SectionTitle(event.stops.length > 1 ? 'Przystanki (${event.stops.length})' : 'Gdzie'),
                   if (event.stops.length > 1)
@@ -294,7 +270,7 @@ class EventDetailPage extends StatelessWidget {
                             first: i == 0,
                             last: i == event.stops.length - 1,
                             past: st.date.isBefore(today),
-                            home: s.isHome(st.cc),
+                            home: s.homeCountry != 'EU' && s.isHome(st.cc),
                             color: kc,
                             chosen: event.chosen?.key == st.key,
                             onTap: event.stops.length > 1 && !st.date.isBefore(today)
@@ -503,6 +479,82 @@ class _LineupState extends State<_Lineup> {
             onPressed: () => setState(() => _all = !_all),
             child: Text(_all ? 'Zwiń' : 'Pokaż wszystkich (${entries.length})'),
           ),
+      ],
+    );
+  }
+}
+
+/// Przykładowe kawałki: setlista z ostatnich koncertów, a jak jej nie ma, największe hity.
+class _MayPlay extends StatelessWidget {
+  const _MayPlay({required this.event});
+
+  final RadarEvent event;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final small = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    final fromSetlist = event.setlist.isNotEmpty;
+    final songs = fromSetlist ? event.setlist : event.hits;
+    final group = event.kind == 'festiwal' || event.kind == 'konwent' || event.kind == 'rave';
+    final String caption;
+    if (fromSetlist) {
+      caption = event.setlistFrom == null
+          ? 'Setlista z ostatnich koncertów, więc pewnie usłyszysz coś z tego.'
+          : 'Setlista: ${event.setlistFrom}.';
+    } else if (songs.isNotEmpty) {
+      caption = group
+          ? 'Największe hity gwiazd z line-upu. Setlist jeszcze nie ma.'
+          : 'Największe hity. Setlisty z tej trasy jeszcze nie ma.';
+    } else {
+      caption = 'Skan jeszcze tego nie uzupełnił. Na razie posłuchaj sam, baka.';
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(caption, style: small),
+        if (songs.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final (i, h) in songs.indexed)
+                ActionChip(
+                  avatar: fromSetlist
+                      ? CircleAvatar(
+                          backgroundColor: Colors.transparent,
+                          child: Text('${i + 1}', style: theme.textTheme.labelSmall),
+                        )
+                      : const Icon(Icons.play_circle_fill_rounded, color: spotifyGreen),
+                  label: Text(h),
+                  tooltip: 'Posłuchaj w Spotify',
+                  onPressed: () => openLink(context, spotifySearchUrl(event, h)),
+                ),
+            ],
+          ),
+        ],
+        if (!group) ...[
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                icon: const Icon(Icons.queue_music_rounded, color: spotifyGreen),
+                label: const Text('Artysta w Spotify'),
+                onPressed: () =>
+                    openLink(context, 'https://open.spotify.com/search/${Uri.encodeComponent(event.artist)}/artists'),
+              ),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.format_list_numbered_rounded),
+                label: const Text('Setlisty'),
+                onPressed: () =>
+                    openLink(context, 'https://www.setlist.fm/search?query=${Uri.encodeComponent(event.artist)}'),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }
