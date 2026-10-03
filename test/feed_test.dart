@@ -81,4 +81,21 @@ void main() {
     expect(s.isHome('PL') && s.isHome('UK'), isTrue);
     expect(s.isHome('JP'), isFalse);
   });
+
+  test('feed z prywatnego repo idzie przez API GitHuba z tokenem', () {
+    const url = 'https://raw.githubusercontent.com/Alexsydfq/weeb-radar/main/events.json';
+    final (plain, h0) = FeedService.githubRequest(url, null);
+    expect(plain.toString(), url);
+    expect(h0, isEmpty);
+    final (api, h) = FeedService.githubRequest(url, 'tok');
+    expect(api.toString(), 'https://api.github.com/repos/Alexsydfq/weeb-radar/contents/events.json?ref=main');
+    expect(h['Authorization'], 'Bearer tok');
+    expect(h['Accept'], 'application/vnd.github.raw');
+    final (refs, _) = FeedService.githubRequest(
+        'https://raw.githubusercontent.com/a/b/refs/heads/dev/data/x.json', 'tok');
+    expect(refs.toString(), 'https://api.github.com/repos/a/b/contents/data/x.json?ref=dev');
+    final (other, h2) = FeedService.githubRequest('https://example.com/feed.json', 'tok');
+    expect(other.host, 'example.com');
+    expect(h2, isEmpty, reason: 'token nie wycieka do obcych stron');
+  });
 }

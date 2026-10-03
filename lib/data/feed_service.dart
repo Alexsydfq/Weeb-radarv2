@@ -32,6 +32,7 @@ class FeedService {
     required List<String> extraFeeds,
     required bool useVocaDb,
     required bool vocaDbEuropeOnly,
+    String? githubToken,
   }) async {
     final status = <String, String>{};
     final all = <String, RadarEvent>{};
@@ -39,7 +40,11 @@ class FeedService {
 
     Future<void> grabFeed(String name, String url, EventOrigin origin) async {
       try {
-        final res = await _client.get(Uri.parse(url)).timeout(_timeout);
+        final (uri, headers) = githubRequest(url, githubToken);
+        final res = await _client.get(uri, headers: headers).timeout(_timeout);
+        if (res.statusCode == 404 && uri.host == 'raw.githubusercontent.com') {
+          throw 'HTTP 404 (repo prywatne? wklej token GitHub w Wygląd → Synchronizacja)';
+        }
         if (res.statusCode != 200) throw 'HTTP ${res.statusCode}';
         final parsed = parseFeed(utf8.decode(res.bodyBytes), origin);
         for (final e in parsed.events) {
@@ -68,6 +73,33 @@ class FeedService {
     ]);
 
     return FetchResult(all.values.toList(), updated, status);
+  }
+
+  /// Feed z GitHuba przy podanym tokenie czytamy przez API, żeby działał też
+  /// z prywatnego repo. Bez tokena zwykły raw.githubusercontent.com.
+  static (Uri, Map<String, String>) githubRequest(String url, String? token) {
+    final uri = Uri.parse(url);
+    final seg = uri.pathSegments;
+    if (token == null || token.isEmpty || uri.host != 'raw.githubusercontent.com' || seg.length < 4) {
+      return (uri, const {});
+    }
+    // raw.githubusercontent.com/<owner>/<repo>/<gałąź>/<ścieżka>; gałąź może być też refs/heads/<gałąź>.
+    var rest = seg.sublist(2);
+    var ref = rest.first;
+    if (rest.length > 3 && rest[0] == 'refs' && rest[1] == 'heads') {
+      ref = rest[2];
+      rest = rest.sublist(2);
+    }
+    final path = rest.sublist(1).map(Uri.encodeComponent).join('/');
+    return (
+      Uri.parse('https://api.github.com/repos/${seg[0]}/${seg[1]}/contents/$path?ref=${Uri.encodeQueryComponent(ref)}'),
+      {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/vnd.github.raw',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'weeb-radar',
+      },
+    );
   }
 
   /// Format feedu weeb-radar: {"updated": ..., "events": [...]} albo sama lista.

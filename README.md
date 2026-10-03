@@ -70,3 +70,9 @@ flutter test tool/screenshots/screenshots_test.dart --update-goldens   # odświe
 ```
 
 `tier` (1–3) to dopasowanie do gustu nadane przez skan; aplikacja dolicza do niego bonus za Twoich artystów, słowa kluczowe i Twój kraj.
+
+## Prywatne repo
+
+- **Weeb-radarv2** (kod apki) może być prywatne bez żadnych zmian. GitHub Actions na prywatnym repo ma na darmowym koncie 2000 minut miesięcznie (Windows liczy się podwójnie); jeden build to ok. 18 minut.
+- **weeb-radar** (feed `events.json`) też może być prywatne: wtedy apka czyta feed przez API GitHuba tokenem z Wygląd → Synchronizacja. Token potrzebuje dodatkowo dostępu do repo `weeb-radar` (Repository permissions → Contents → Read-only).
+

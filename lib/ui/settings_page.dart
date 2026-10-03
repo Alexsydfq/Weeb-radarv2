@@ -223,7 +223,8 @@ class _SyncCardState extends State<_SyncCard> {
         children: [
           Text(
             'Twoje „Idę / Może / Zainteresowany / Nie idę”, gwiazdki i ukryte eventy lądują w prywatnym Giście na Twoim '
-            'koncie GitHub. Ten sam token wklejasz na telefonie i na komputerze, i tyle.',
+            'koncie GitHub. Ten sam token wklejasz na telefonie i na komputerze, i tyle. '
+            'Ten token pozwala też czytać feed eventów z prywatnego repo.',
             style: theme.textTheme.bodyMedium,
           ),
           const SizedBox(height: 10),
@@ -231,7 +232,9 @@ class _SyncCardState extends State<_SyncCard> {
             Text(
               'Token: github.com → Settings → Developer settings → Personal access tokens → '
               'Fine-grained tokens → Generate. Uprawnienie: Account permissions → Gists → Read and write. '
-              '(Klasyczny token też działa, wtedy zaznacz tylko „gist”.)',
+              'Jeśli repo z feedem (weeb-radar) jest prywatne: Repository access → Only select repositories → '
+              'weeb-radar, i Repository permissions → Contents → Read-only. '
+              '(Klasyczny token też działa: zaznacz „gist”, a dla prywatnego feedu też „repo”.)',
               style: small,
             ),
             const SizedBox(height: 6),

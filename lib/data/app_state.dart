@@ -217,6 +217,7 @@ class AppState extends ChangeNotifier {
         extraFeeds: extraFeeds,
         useVocaDb: useVocaDb,
         vocaDbEuropeOnly: vocaDbEuropeOnly,
+        githubToken: syncToken,
       );
       sourceStatus
         ..clear()
@@ -373,6 +374,8 @@ class AppState extends ChangeNotifier {
     }
     await _prefs.remove('sync.gist');
     notifyListeners();
+    // Token może też otwierać prywatny feed, więc od razu odświeżamy eventy.
+    unawaited(refresh());
     await syncNow();
   }
 
