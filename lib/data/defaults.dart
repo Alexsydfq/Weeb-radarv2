@@ -45,6 +45,8 @@ const defaultArtists = <String>[
   'gaburyu', 'YACA IN DA HOUSE', '暁Records', 'MAMEKAKAO', 'ODDEEO', 'Vane Lily',
   'Riproducer', 'THØRNS', 'WitcheswithGlitches', 'Staircatte', 'Monochrome Media',
   'electrovoid', 'KAFKA', 'Mage-P', '11vein', '4M-P', 'Pizza-P!', '佐藤貴文',
+  'Miki Matsubara', 'GUMI', 'kinoshita', 'はしメロ', 'Nanamori-Chu☆Goraku-Bu', 'ときのそら',
+  'UniChØrd', '恵飛須沢胡桃', 'tamaki',
   // Podane przez Awexa: widziani na Pohodzie i Primaverze.
   'Gorillaz', 'LCD Soundsystem',
 ];
