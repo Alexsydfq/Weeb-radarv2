@@ -64,7 +64,7 @@ jobs:
       - run: flutter build windows --release
       - name: Spakuj do zip
         shell: pwsh
-        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath WeebRadar-windows.zip
+        run: 7z a -tzip -mm=Deflate WeebRadar-windows.zip ./build/windows/x64/runner/Release/*
       - uses: actions/upload-artifact@v4
         with:
           name: WeebRadar-windows
@@ -74,7 +74,7 @@ jobs:
         shell: pwsh
         run: |
           Rename-Item build/windows/x64/runner/Release/weeb_radar.exe RadarKoncertow.exe
-          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath RadarKoncertow-windows.zip
+          7z a -tzip -mm=Deflate RadarKoncertow-windows.zip ./build/windows/x64/runner/Release/*
       - uses: actions/upload-artifact@v4
         with:
           name: RadarKoncertow-windows
