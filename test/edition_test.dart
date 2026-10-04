@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:weeb_radar/data/app_state.dart';
+import 'package:weeb_radar/data/defaults.dart';
 import 'package:weeb_radar/edition.dart';
 import 'package:weeb_radar/models/event.dart';
 
@@ -26,13 +27,13 @@ void main() {
       SharedPreferences.setMockInitialValues({'sync.token': 'ghp_cudzy'});
       final s = AppState(await SharedPreferences.getInstance())..loadSettings();
       expect(appName, 'Radar koncertów');
-      expect(s.artists, isEmpty);
+      expect(s.artists, unorderedEquals(defaultArtists), reason: 'ta sama lista artystów');
+    expect(s.artists, isNot(orderedEquals(defaultArtists)), reason: 'ale bez kolejności z rankingu Spotify');
       expect(s.notifyEnabled, isFalse);
       expect(s.syncEnabled, isFalse, reason: 'token z ustawień nie włącza synchronizacji');
 
-      s.setArtists(['DECO*27']);
-      final e = event('DECO*27');
-      expect(s.isSpotify(e), isTrue, reason: 'własnych artystów dalej widać');
+        final e = event('DECO*27');
+      expect(s.isSpotify(e), isTrue, reason: 'artystów z listy dalej widać');
       expect(s.spotifyRank(e), isNull, reason: 'ale bez miejsc ze Spotify Awexa');
     },
   );

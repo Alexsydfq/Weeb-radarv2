@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../data/defaults.dart';
+import '../data/app_state.dart';
 import '../edition.dart';
 import 'app_scope.dart';
 import 'widgets/glass.dart';
@@ -51,7 +51,12 @@ class _ArtistsPageState extends State<ArtistsPage> {
       for (final a in s.artists)
         a: s.upcoming.where((e) => s.mentions(e.searchable, a)).length,
     };
-    final sorted = [...s.artists]..sort((a, b) => counts[b]!.compareTo(counts[a]!));
+    // Remisy alfabetycznie, żeby kolejność listy (u Awexa: ranking Spotify) nie przeciekała.
+    final sorted = [...s.artists]
+      ..sort((a, b) {
+        final byCount = counts[b]!.compareTo(counts[a]!);
+        return byCount != 0 ? byCount : a.toLowerCase().compareTo(b.toLowerCase());
+      });
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -66,7 +71,8 @@ class _ArtistsPageState extends State<ArtistsPage> {
           child: Text(
             byEdition(
               'Startowa lista pochodzi z Twojego Spotify. Radar podświetla eventy, w których pada któreś z tych imion.',
-              'Dodaj artystów, których słuchasz. Radar podświetli eventy, w których pada któreś z tych imion.',
+              'Na start lista artystów z radaru. Dodawaj i usuwaj po swojemu: radar podświetla eventy, '
+                  'w których pada któreś z tych imion.',
             ),
             style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
@@ -90,27 +96,24 @@ class _ArtistsPageState extends State<ArtistsPage> {
         ),
         SectionTitle(
           '${s.artists.length} artystów',
-          // Przywracanie listy Awexa nie ma sensu u znajomych.
-          trailing: friendsEdition
-              ? null
-              : TextButton.icon(
-                  icon: const Icon(Icons.restore_rounded),
-                  label: const Text('Lista ze Spotify'),
-                  onPressed: () async {
-                    final ok = await showDialog<bool>(
-                      context: context,
-                      builder: (c) => AlertDialog(
-                        title: const Text('Przywrócić listę ze Spotify?'),
-                        content: const Text('Twoje ręczne zmiany na liście artystów znikną.'),
-                        actions: [
-                          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Anuluj')),
-                          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Przywróć')),
-                        ],
-                      ),
-                    );
-                    if (ok == true) s.setArtists([...defaultArtists]);
-                  },
+          trailing: TextButton.icon(
+            icon: const Icon(Icons.restore_rounded),
+            label: Text(byEdition('Lista ze Spotify', 'Lista startowa')),
+            onPressed: () async {
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (c) => AlertDialog(
+                  title: Text(byEdition('Przywrócić listę ze Spotify?', 'Przywrócić listę startową?')),
+                  content: const Text('Twoje ręczne zmiany na liście artystów znikną.'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Anuluj')),
+                    FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Przywróć')),
+                  ],
                 ),
+              );
+              if (ok == true) s.setArtists(starterArtists);
+            },
+          ),
         ),
         Glass(
           child: Wrap(
