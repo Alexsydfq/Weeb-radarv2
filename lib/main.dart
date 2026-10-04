@@ -11,6 +11,7 @@ import 'background/background.dart';
 import 'background/desktop.dart';
 import 'background/notifications.dart';
 import 'data/app_state.dart';
+import 'edition.dart';
 import 'ui/app_scope.dart';
 import 'ui/shell.dart';
 import 'ui/theme.dart';
@@ -48,7 +49,7 @@ class WeebRadarApp extends StatelessWidget {
       child: ListenableBuilder(
         listenable: state,
         builder: (context, _) => MaterialApp(
-          title: 'Weeb Radar',
+          title: appName,
           debugShowCheckedModeBanner: false,
           themeMode: state.themeMode,
           theme: buildTheme(state.accent, Brightness.light),

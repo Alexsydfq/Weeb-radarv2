@@ -1,13 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-
 import 'package:flutter/material.dart';
 
 import '../background/background.dart';
 import '../background/notifications.dart';
 import '../data/app_state.dart';
 import '../data/defaults.dart';
+import '../edition.dart';
 import 'app_scope.dart';
 import 'theme.dart';
 import 'util.dart';
@@ -198,12 +198,18 @@ class SettingsPage extends StatelessWidget {
         ),
         const SectionTitle('Powiadomienia'),
         const _NotifyCard(),
-        const SectionTitle('Synchronizacja telefon ↔ komputer'),
-        const _SyncCard(),
+        // Wydanie dla znajomych nie ma synchronizacji przez GitHub.
+        if (friendsEdition) ...[
+          const SectionTitle('Plany'),
+          const Glass(child: _HideNotGoing()),
+        ] else ...[
+          const SectionTitle('Synchronizacja telefon ↔ komputer'),
+          const _SyncCard(),
+        ],
         const SizedBox(height: 18),
         Center(
           child: Text(
-            'Weeb Radar · zrobione z (｀・ω・´) dla Awexa',
+            byEdition('Weeb Radar · zrobione z (｀・ω・´) dla Awexa', '$appName · dane z publicznego feedu'),
             style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ),
@@ -251,9 +257,13 @@ class _NotifyCardState extends State<_NotifyCard> {
             Text('O czym', style: theme.textTheme.labelLarge),
             const SizedBox(height: 6),
             SegmentedButton<bool>(
-              segments: const [
-                ButtonSegment(value: true, label: Text('Tylko Spotify'), icon: Icon(Icons.headphones_rounded)),
-                ButtonSegment(value: false, label: Text('Cały „Dla mnie”'), icon: Icon(Icons.favorite_rounded)),
+              segments: [
+                ButtonSegment(
+                  value: true,
+                  label: Text(byEdition('Tylko Spotify', 'Moi artyści')),
+                  icon: const Icon(Icons.headphones_rounded),
+                ),
+                const ButtonSegment(value: false, label: Text('Cały „Dla mnie”'), icon: Icon(Icons.favorite_rounded)),
               ],
               selected: {s.notifySpotifyOnly},
               onSelectionChanged: (v) => s.setNotify(spotifyOnly: v.first),
@@ -303,7 +313,8 @@ class _NotifyCardState extends State<_NotifyCard> {
               ),
             ),
           ],
-          if (s.notifyEnabled && !kIsWeb && Platform.isAndroid)
+          // Wydanie dla znajomych nie prosi o zwolnienie z oszczędzania baterii.
+          if (s.notifyEnabled && !friendsEdition && !kIsWeb && Platform.isAndroid)
             FutureBuilder<bool>(
               future: Notifier.batteryUnrestricted(),
               builder: (context, snap) => snap.data != false
@@ -358,7 +369,9 @@ class _NotifyCardState extends State<_NotifyCard> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              n == 0 ? 'Nic nowego. Hmph, nie moja wina.' : 'Nowości: $n, patrz powiadomienie!',
+                              n == 0
+                                  ? byEdition('Nic nowego. Hmph, nie moja wina.', 'Nic nowego.')
+                                  : 'Nowości: $n, patrz powiadomienie!',
                             ),
                           ),
                         );
@@ -485,16 +498,30 @@ class _SyncCardState extends State<_SyncCard> {
             ),
           ],
           const Divider(height: 28),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            secondary: const Icon(Icons.cancel_outlined),
-            title: const Text('Chowaj „Nie idę” z zakładki „Dla mnie”'),
-            subtitle: Text('Wyłączone: zostają, ale przygaszone i niżej', style: small),
-            value: s.hideNotGoing,
-            onChanged: s.setHideNotGoing,
-          ),
+          const _HideNotGoing(),
         ],
       ),
+    );
+  }
+}
+
+class _HideNotGoing extends StatelessWidget {
+  const _HideNotGoing();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final theme = Theme.of(context);
+    return SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      secondary: const Icon(Icons.cancel_outlined),
+      title: const Text('Chowaj „Nie idę” z zakładki „Dla mnie”'),
+      subtitle: Text(
+        'Wyłączone: zostają, ale przygaszone i niżej',
+        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+      ),
+      value: s.hideNotGoing,
+      onChanged: s.setHideNotGoing,
     );
   }
 }

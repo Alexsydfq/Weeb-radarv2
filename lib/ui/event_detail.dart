@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../data/defaults.dart';
 import '../data/sync_service.dart';
+import '../edition.dart';
 import '../models/event.dart';
 import 'app_scope.dart';
 import 'background.dart';
@@ -175,7 +176,10 @@ class EventDetailPage extends StatelessWidget {
                       Text(
                         s.syncEnabled
                             ? 'Synchronizuje się z drugim urządzeniem przez Twój prywatny Gist.'
-                            : 'Synchronizację z telefonem/komputerem włączysz w zakładce Wygląd.',
+                            : byEdition(
+                                'Synchronizację z telefonem/komputerem włączysz w zakładce Wygląd.',
+                                'Zapisane tylko na tym urządzeniu.',
+                              ),
                         style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                       ),
                     ],
@@ -456,7 +460,10 @@ class _LineupState extends State<_Lineup> {
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Text(
-              mine == 1 ? '1 osoba z Twojego Spotify' : '$mine osób z Twojego Spotify',
+              byEdition(
+                mine == 1 ? '1 osoba z Twojego Spotify' : '$mine osób z Twojego Spotify',
+                mine == 1 ? '1 osoba z Twojej listy artystów' : '$mine osób z Twojej listy artystów',
+              ),
               style: theme.textTheme.labelLarge?.copyWith(color: spotifyGreen, fontWeight: FontWeight.w700),
             ),
           ),
@@ -507,7 +514,10 @@ class _MayPlay extends StatelessWidget {
           ? 'Największe hity gwiazd z line-upu. Setlist jeszcze nie ma.'
           : 'Największe hity. Setlisty z tej trasy jeszcze nie ma.';
     } else {
-      caption = 'Skan jeszcze tego nie uzupełnił. Na razie posłuchaj sam, baka.';
+      caption = byEdition(
+        'Skan jeszcze tego nie uzupełnił. Na razie posłuchaj sam, baka.',
+        'Tu jeszcze nic nie ma. Poszukaj artysty w Spotify albo na setlist.fm.',
+      );
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

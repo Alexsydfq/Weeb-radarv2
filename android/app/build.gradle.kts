@@ -31,6 +31,22 @@ android {
         versionName = flutter.versionName
     }
 
+    // Dwa wydania z jednego kodu: „full” (Weeb Radar Awexa) i „friends”
+    // (neutralne, tylko do czytania; buduj z --dart-define=EDITION=friends).
+    // Inne applicationId, więc oba można mieć naraz na jednym telefonie.
+    flavorDimensions += "edition"
+    productFlavors {
+        create("full") {
+            dimension = "edition"
+            resValue("string", "app_name", "Weeb Radar")
+        }
+        create("friends") {
+            dimension = "edition"
+            applicationIdSuffix = ".friends"
+            resValue("string", "app_name", "Radar koncertów")
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

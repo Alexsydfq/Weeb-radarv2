@@ -13,6 +13,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:weeb_radar/data/app_state.dart';
 import 'package:weeb_radar/data/feed_service.dart';
+import 'package:weeb_radar/edition.dart';
 import 'package:weeb_radar/main.dart';
 import 'package:weeb_radar/ui/theme.dart';
 
@@ -157,8 +158,14 @@ void main() {
     ('phone_event_songs', const Size(412, 915), 'Plany'),
     ('phone_look', const Size(412, 915), 'Wygląd'),
     ('windows_radar', const Size(1400, 900), null),
+    // Wydanie dla znajomych (--dart-define=EDITION=friends).
+    ('friends_radar', const Size(412, 915), null),
+    ('friends_event', const Size(412, 915), 'Plany'),
+    ('friends_look', const Size(412, 915), 'Wygląd'),
   ]) {
     testWidgets(name, (tester) async {
+      friendsEdition = name.startsWith('friends_');
+      addTearDown(() => friendsEdition = false);
       tester.view.physicalSize = size * 2;
       tester.view.devicePixelRatio = 2;
       addTearDown(tester.view.reset);
@@ -180,7 +187,7 @@ void main() {
         }
         await tester.pump(const Duration(seconds: 1));
       }
-      if (name.startsWith('phone_event')) {
+      if (name.startsWith('phone_event') || name == 'friends_event') {
         await tester.tap(find.text('MIKU EXPO 2026 Europe').first);
         await tester.pump(const Duration(seconds: 1));
       }

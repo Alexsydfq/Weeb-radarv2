@@ -8,6 +8,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../edition.dart';
 import '../models/event.dart';
 import '../models/song.dart';
 import 'defaults.dart';
@@ -35,12 +36,13 @@ class AppState extends ChangeNotifier {
   double backgroundBlur = 0;
   double backgroundDim = 0.45;
   BackgroundFit backgroundFit = BackgroundFit.cover;
-  Color accent = const Color(0xFF39C5BB); // turkus Miku
+  Color accent = friendsEdition ? calmAccent : const Color(0xFF39C5BB); // turkus Miku
   ThemeMode themeMode = ThemeMode.dark;
   double cardOpacity = 0.55;
 
   // ---------- gust ----------
-  List<String> artists = [...defaultArtists];
+  /// U znajomych lista startuje pusta (lista Awexa pochodzi z jego Spotify).
+  List<String> artists = friendsEdition ? <String>[] : [...defaultArtists];
   List<String> keywords = [...defaultKeywords];
   /// Decyzje per event (Idę / Może / Zainteresowany / Nie idę, ulubione, ukryte) z czasem zmiany.
   /// To jest to, co jedzie przez synchronizację.
@@ -51,7 +53,7 @@ class AppState extends ChangeNotifier {
   bool hideNotGoing = false;
 
   // ---------- powiadomienia ----------
-  bool notifyEnabled = true;
+  bool notifyEnabled = !friendsEdition;
 
   /// Tylko Spotify albo cały gust („Dla mnie”).
   bool notifySpotifyOnly = false;
@@ -73,7 +75,7 @@ class AppState extends ChangeNotifier {
   bool syncing = false;
   String? syncError;
   DateTime? lastSync;
-  bool get syncEnabled => syncToken != null && syncToken!.isNotEmpty;
+  bool get syncEnabled => !friendsEdition && syncToken != null && syncToken!.isNotEmpty;
   Timer? _syncDebounce;
   /// Kod kraju albo 'EU' (cała Europa, domyślnie).
   String homeCountry = 'EU';
@@ -173,19 +175,21 @@ class AppState extends ChangeNotifier {
     cardOpacity = p.getDouble('ui.cardOpacity') ?? cardOpacity;
 
     artists = p.getStringList('taste.artists') ?? artists;
-    // Nowi artyści z aktualizacji apki trafiają na listę, ale tych, których
-    // sam usunąłeś, nie wskrzeszamy (pamiętamy, co już było proponowane).
-    final known = p.getStringList('taste.knownDefaults')?.toSet();
-    final have = {for (final a in artists) a.toLowerCase()};
-    final fresh = defaultArtists
-        .where((a) => !(known?.contains(a) ?? false) && !have.contains(a.toLowerCase()))
-        .toList();
-    if (fresh.isNotEmpty) {
-      artists = [...artists, ...fresh];
-      p.setStringList('taste.artists', artists);
-    }
-    if (known == null || fresh.isNotEmpty || known.length != defaultArtists.length) {
-      p.setStringList('taste.knownDefaults', defaultArtists);
+    if (!friendsEdition) {
+      // Nowi artyści z aktualizacji apki trafiają na listę, ale tych, których
+      // sam usunąłeś, nie wskrzeszamy (pamiętamy, co już było proponowane).
+      final known = p.getStringList('taste.knownDefaults')?.toSet();
+      final have = {for (final a in artists) a.toLowerCase()};
+      final fresh = defaultArtists
+          .where((a) => !(known?.contains(a) ?? false) && !have.contains(a.toLowerCase()))
+          .toList();
+      if (fresh.isNotEmpty) {
+        artists = [...artists, ...fresh];
+        p.setStringList('taste.artists', artists);
+      }
+      if (known == null || fresh.isNotEmpty || known.length != defaultArtists.length) {
+        p.setStringList('taste.knownDefaults', defaultArtists);
+      }
     }
     keywords = p.getStringList('taste.keywords') ?? keywords;
     entries = decodeEntries(p.getString('plans.entries'));
@@ -360,9 +364,12 @@ class AppState extends ChangeNotifier {
     }).toList();
   }
 
-  static final _spotifyRanks = <String, int>{
+  static final _spotifyTop = <String, int>{
     for (final (i, n) in spotifyTopArtists.indexed.toList().reversed) n.toLowerCase(): i + 1,
   };
+
+  /// Miejsca w Spotify „Top ogólnie” Awexa; wydanie dla znajomych ich nie zna.
+  static Map<String, int> get _spotifyRanks => friendsEdition ? const {} : _spotifyTop;
 
   /// Najwyższe miejsce w Twoim Spotify „Top ogólnie” spośród artystów eventu
   /// (null, gdy nikogo z tej listy tam nie ma).

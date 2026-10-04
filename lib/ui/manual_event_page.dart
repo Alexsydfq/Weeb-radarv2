@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/defaults.dart';
+import '../edition.dart';
 import '../models/event.dart';
 import 'app_scope.dart';
 import 'background.dart';
@@ -103,7 +104,7 @@ class _ManualEventPageState extends State<ManualEventPage> {
                       TextFormField(
                         controller: _artist,
                         decoration: deco('Artysta / nazwa eventu', Icons.mic_rounded),
-                        validator: (v) => (v == null || v.trim().isEmpty) ? 'Wpisz chociaż nazwę, baka' : null,
+                        validator: (v) => (v == null || v.trim().isEmpty) ? byEdition('Wpisz chociaż nazwę, baka', 'Wpisz nazwę') : null,
                       ),
                       const SizedBox(height: 12),
                       TextFormField(controller: _title, decoration: deco('Podtytuł (opcjonalnie)', Icons.title_rounded)),

@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
 
 import '../background/background.dart';
+import '../edition.dart';
 import 'app_scope.dart';
 
 /// Odświeża wszystko naraz i pokazuje wynik na dole ekranu.
 Future<void> refreshAll(BuildContext context) async {
   final s = AppScope.read(context);
   final messenger = ScaffoldMessenger.maybeOf(context);
+  if (friendsEdition) {
+    // U znajomych tylko pobieramy publiczny feed: bez synchronizacji i powiadomień.
+    await s.refresh(sync: false);
+    messenger
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(s.lastError ?? 'Pobrano najnowsze dane.')));
+    return;
+  }
   final msg = await refreshEverything(s);
   messenger
     ?..hideCurrentSnackBar()
@@ -48,7 +57,7 @@ class RefreshButton extends StatelessWidget {
           child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5)),
         )
       : IconButton.filledTonal(
-          tooltip: 'Odśwież wszystko',
+          tooltip: byEdition('Odśwież wszystko', 'Odśwież'),
           icon: const Icon(Icons.refresh_rounded),
           onPressed: () => refreshAll(context),
         );

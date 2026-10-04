@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../data/news.dart';
+import '../edition.dart';
 import '../models/song.dart';
 import '../ui/util.dart';
 
@@ -67,12 +68,12 @@ class Notifier {
   static Future<void> init({void Function()? onTap}) async {
     if (_ready || !supported) return;
     await _plugin.initialize(
-      settings: const InitializationSettings(
-        android: AndroidInitializationSettings('ic_stat_radar'),
+      settings: InitializationSettings(
+        android: const AndroidInitializationSettings('ic_stat_radar'),
         windows: WindowsInitializationSettings(
-          appName: 'Weeb Radar',
-          appUserModelId: 'Awex.WeebRadar.App',
-          guid: '6b2f1c3e-8a4d-4e5f-9b7a-2c1d0e3f4a5b',
+          appName: appName,
+          appUserModelId: friendsEdition ? 'Awex.RadarKoncertow.App' : 'Awex.WeebRadar.App',
+          guid: friendsEdition ? '0d4c8e1a-3f6b-4a2d-9c5e-7b1a2f3e4d5c' : '6b2f1c3e-8a4d-4e5f-9b7a-2c1d0e3f4a5b',
         ),
       ),
       onDidReceiveNotificationResponse: (_) => onTap?.call(),
@@ -131,7 +132,7 @@ class Notifier {
     } else {
       final fresh = news.where((n) => !n.isChange).length;
       final changed = news.length - fresh;
-      title = 'Weeb Radar: ${[
+      title = '$appName: ${[
         if (fresh > 0) '$fresh ${fresh == 1 ? 'nowy event' : fresh < 5 ? 'nowe eventy' : 'nowych eventów'}',
         if (changed > 0) '$changed ${changed == 1 ? 'zmiana' : changed < 5 ? 'zmiany' : 'zmian'}',
       ].join(', ')}';

@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../data/app_state.dart';
+import '../edition.dart';
 import 'app_scope.dart';
 
 /// Tło całej aplikacji: Twój obrazek albo GIF, z rozmyciem i przyciemnieniem.
@@ -94,7 +95,8 @@ class _GradientBackgroundState extends State<_GradientBackground>
     final second = hsl.withHue((hsl.hue + 70) % 360).toColor();
     final third = hsl.withHue((hsl.hue + 200) % 360).toColor();
     final base = widget.dark ? const Color(0xFF0B0B14) : const Color(0xFFF4F2FA);
-    final a = widget.dark ? 0.55 : 0.35;
+    // U znajomych spokojniej: słabsze kolory.
+    final a = (widget.dark ? 0.55 : 0.35) * (friendsEdition ? 0.5 : 1);
     return AnimatedBuilder(
       animation: _c,
       builder: (context, _) {

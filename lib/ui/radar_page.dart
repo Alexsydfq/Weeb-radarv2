@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../data/defaults.dart';
+import '../edition.dart';
 import '../models/event.dart';
 import 'app_scope.dart';
-import 'refresh.dart';
 import 'event_detail.dart';
+import 'refresh.dart';
 import 'util.dart';
 import 'widgets/event_card.dart';
 import 'widgets/glass.dart';
@@ -135,18 +136,22 @@ class _RadarPageState extends State<RadarPage> {
                     child: Row(
                       children: [
                         SegmentedButton<_Scope>(
-                          segments: const [
+                          segments: [
                             ButtonSegment(
                               value: _Scope.spotify,
-                              label: Text('Spotify'),
-                              icon: Icon(Icons.headphones_rounded),
+                              label: Text(byEdition('Spotify', 'Moi artyści')),
+                              icon: const Icon(Icons.headphones_rounded),
                             ),
-                            ButtonSegment(
+                            const ButtonSegment(
                               value: _Scope.forYou,
                               label: Text('Dla mnie'),
                               icon: Icon(Icons.favorite_rounded),
                             ),
-                            ButtonSegment(value: _Scope.all, label: Text('Wszystko'), icon: Icon(Icons.public_rounded)),
+                            const ButtonSegment(
+                              value: _Scope.all,
+                              label: Text('Wszystko'),
+                              icon: Icon(Icons.public_rounded),
+                            ),
                           ],
                           selected: {_scope},
                           onSelectionChanged: (v) => setState(() => _scope = v.first),
@@ -200,7 +205,7 @@ class _RadarPageState extends State<RadarPage> {
                 padding: const EdgeInsets.all(32),
                 child: Column(
                   children: [
-                    const Text('(´・ω・`)', style: TextStyle(fontSize: 34)),
+                    Text(byEdition('(´・ω・`)', '🔍'), style: const TextStyle(fontSize: 34)),
                     const SizedBox(height: 8),
                     Text(
                       _forYou
@@ -253,7 +258,13 @@ class _Header extends StatelessWidget {
     final s = AppScope.of(context);
     final theme = Theme.of(context);
     final h = DateTime.now().hour;
-    final greet = h < 5
+    final greet = friendsEdition
+        ? (h < 5 || h >= 18
+              ? 'Dobry wieczór!'
+              : h < 12
+              ? 'Dzień dobry!'
+              : 'Cześć!')
+        : h < 5
         ? 'Czemu nie śpisz, baka?'
         : h < 12
         ? 'Ohayō, Awex!'
@@ -271,7 +282,7 @@ class _Header extends StatelessWidget {
               children: [
                 Text(greet, style: theme.textTheme.labelLarge?.copyWith(color: s.accent)),
                 Text(
-                  'Weeb Radar',
+                  appName,
                   style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w900, letterSpacing: -0.5),
                 ),
                 if (updated != null)
@@ -428,7 +439,11 @@ class _HeroCard extends StatelessWidget {
                                   color: Colors.white,
                                   icon: Icons.headphones_rounded,
                                 )
-                              : const Pill('POLECAM', color: Colors.white, icon: Icons.auto_awesome),
+                              : Pill(
+                                  byEdition('POLECAM', 'POLECANE'),
+                                  color: Colors.white,
+                                  icon: Icons.auto_awesome,
+                                ),
                           const SizedBox(width: 6),
                           Pill(countdown(event.nextDate), color: Colors.white, icon: Icons.timer_outlined),
                         ],
@@ -511,7 +526,7 @@ class _Stats extends StatelessWidget {
       children: [
         tile('${events.length}', 'nadchodzące', Icons.event_available_rounded),
         const SizedBox(width: 8),
-        tile('$mine', 'ze Spotify', Icons.headphones_rounded),
+        tile('$mine', byEdition('ze Spotify', 'Twoi artyści'), Icons.headphones_rounded),
         const SizedBox(width: 8),
         tile('$home', s.homeCountry == 'EU' ? 'w Europie' : '${flagOf(s.homeCountry)} u Ciebie', Icons.home_rounded),
         const SizedBox(width: 8),

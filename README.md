@@ -46,14 +46,29 @@ GitHub Actions buduje oba warianty przy każdym pushu:
 
 APK jest podpisany kluczem debug, więc Android poprosi o zgodę na instalację z nieznanego źródła.
 
+## Wersja dla znajomych („Radar koncertów”)
+
+Ten sam kod, osobne wydanie: artefakty `RadarKoncertow-android` i `RadarKoncertow-windows` (w zipie `RadarKoncertow.exe`). Na Androidzie ma inne ID (`pl.awex.weeb_radar.friends`), więc można ją mieć obok pełnej wersji.
+
+- Neutralna nazwa i teksty, spokojniejszy stalowy kolor i zwykły systemowy font.
+- Tylko czyta publiczny feed: bez tokenu GitHub i synchronizacji, bez zakładki „Źródła”, a „Odśwież” tylko pobiera dane.
+- Bez listy artystów i miejsc ze Spotify Awexa: lista „Twoi artyści” startuje pusta i każdy wpisuje swoich.
+- Plany (Idę / Może / …) i gwiazdki zostają tylko na urządzeniu.
+- Powiadomienia są domyślnie wyłączone (można je włączyć w „Wygląd”), a na Androidzie apka nie prosi o zwolnienie z oszczędzania baterii.
+
+| Radar | Event | Wygląd |
+|---|---|---|
+| ![](docs/screenshots/friends_radar.png) | ![](docs/screenshots/friends_event.png) | ![](docs/screenshots/friends_look.png) |
+
 ## Budowanie lokalnie
 
 ```bash
 flutter pub get
-flutter run                     # telefon / emulator
+flutter run --flavor full       # telefon / emulator
 flutter run -d windows          # Windows (wymaga Visual Studio z C++)
-flutter build apk --release
-flutter build windows --release
+flutter build apk --release --flavor full
+flutter build apk --release --flavor friends --dart-define=EDITION=friends   # wersja dla znajomych
+flutter build windows --release                                            # + --dart-define=EDITION=friends
 flutter test test/
 flutter test tool/screenshots/screenshots_test.dart --update-goldens   # odświeża zrzuty
 ```

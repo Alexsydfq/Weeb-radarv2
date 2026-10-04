@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../data/defaults.dart';
 import '../data/sync_service.dart';
+import '../edition.dart';
 import '../models/event.dart';
 
 final _day = DateFormat('d MMM', 'pl');
@@ -88,7 +89,11 @@ Color planColor(Plan p) => switch (p) {
 /// Zieleń Spotify: tym kolorem apka wyróżnia eventy z artystami, których słuchasz.
 const spotifyGreen = Color(0xFF1ED760);
 
-String spotifyLabel(int? rank) => rank == null ? 'Słuchasz' : 'Spotify #$rank';
+String spotifyLabel(int? rank) => friendsEdition
+    ? 'Twój artysta'
+    : rank == null
+    ? 'Słuchasz'
+    : 'Spotify #$rank';
 
 
 /// Wyszukiwanie kawałka w Spotify. Przy koncertach dokładamy nazwę artysty,

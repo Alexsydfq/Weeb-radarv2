@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/sync_service.dart';
+import '../edition.dart';
 import '../models/event.dart';
 import 'app_scope.dart';
 import 'util.dart';
@@ -50,7 +51,10 @@ class FavoritesPage extends StatelessWidget {
             Expanded(
               child: Text(
                 !s.syncEnabled
-                    ? 'Tylko na tym urządzeniu. Synchronizację włączysz w Wyglądzie.'
+                    ? byEdition(
+                        'Tylko na tym urządzeniu. Synchronizację włączysz w Wyglądzie.',
+                        'Zapisane tylko na tym urządzeniu.',
+                      )
                     : s.syncError ?? (s.syncing ? 'Synchronizuję…' : 'Zsynchronizowane z drugim urządzeniem'),
                 style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
@@ -67,10 +71,13 @@ class FavoritesPage extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(32),
             child: Column(children: [
-              const Text('☆ (ﾉ◕ヮ◕)ﾉ*:・ﾟ✧', style: TextStyle(fontSize: 26)),
+              Text(byEdition('☆ (ﾉ◕ヮ◕)ﾉ*:・ﾟ✧', '☆'), style: const TextStyle(fontSize: 26)),
               const SizedBox(height: 10),
               Text(
-                'N-nie ma tu nic! Otwórz event i kliknij „Idę”, „Może”, „Zainteresowany” albo gwiazdkę. Nie żeby mi zależało.',
+                byEdition(
+                  'N-nie ma tu nic! Otwórz event i kliknij „Idę”, „Może”, „Zainteresowany” albo gwiazdkę. Nie żeby mi zależało.',
+                  'Na razie pusto. Otwórz event i kliknij „Idę”, „Może”, „Zainteresowany” albo gwiazdkę.',
+                ),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyLarge,
               ),

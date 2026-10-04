@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../edition.dart';
 import '../models/event.dart';
 import 'app_scope.dart';
 import 'refresh.dart';
@@ -95,10 +96,14 @@ class _JapanPageState extends State<JapanPage> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: SegmentedButton<_Scope>(
-              segments: const [
-                ButtonSegment(value: _Scope.spotify, label: Text('Spotify'), icon: Icon(Icons.headphones_rounded)),
-                ButtonSegment(value: _Scope.forYou, label: Text('Dla mnie'), icon: Icon(Icons.favorite_rounded)),
-                ButtonSegment(value: _Scope.all, label: Text('Wszystko'), icon: Icon(Icons.public_rounded)),
+              segments: [
+                ButtonSegment(
+                  value: _Scope.spotify,
+                  label: Text(byEdition('Spotify', 'Moi artyści')),
+                  icon: const Icon(Icons.headphones_rounded),
+                ),
+                const ButtonSegment(value: _Scope.forYou, label: Text('Dla mnie'), icon: Icon(Icons.favorite_rounded)),
+                const ButtonSegment(value: _Scope.all, label: Text('Wszystko'), icon: Icon(Icons.public_rounded)),
               ],
               selected: {_scope},
               onSelectionChanged: (v) => setState(() => _scope = v.first),
@@ -110,11 +115,14 @@ class _JapanPageState extends State<JapanPage> {
               padding: const EdgeInsets.all(28),
               child: Column(
                 children: [
-                  const Text('(￣ヘ￣;)', style: TextStyle(fontSize: 26)),
+                  Text(byEdition('(￣ヘ￣;)', '🗾'), style: const TextStyle(fontSize: 26)),
                   const SizedBox(height: 10),
                   Text(
                     all.isEmpty
-                        ? 'Jeszcze nic z Japonii. Skan dorzuca je dwa razy w tygodniu, więc cierpliwości, baka.'
+                        ? byEdition(
+                            'Jeszcze nic z Japonii. Skan dorzuca je dwa razy w tygodniu, więc cierpliwości, baka.',
+                            'Jeszcze nic z Japonii. Nowe wydarzenia pojawiają się tu kilka razy w tygodniu.',
+                          )
                         : 'Nic nie pasuje do filtra. Spróbuj „Wszystko”.',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyLarge,

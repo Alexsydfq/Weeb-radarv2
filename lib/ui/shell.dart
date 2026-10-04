@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../edition.dart';
 import 'artists_page.dart';
 import 'background.dart';
 import 'calendar_page.dart';
@@ -28,7 +29,7 @@ class Shell extends StatefulWidget {
 class _ShellState extends State<Shell> {
   int _index = 0;
 
-  static const _dests = [
+  static const _all = [
     _Dest('Radar', Icons.radar_outlined, Icons.radar, RadarPage()),
     _Dest('Muzyka', Icons.library_music_outlined, Icons.library_music, MusicPage()),
     _Dest('Japonia', Icons.temple_buddhist_outlined, Icons.temple_buddhist, JapanPage()),
@@ -38,6 +39,9 @@ class _ShellState extends State<Shell> {
     _Dest('Źródła', Icons.travel_explore_outlined, Icons.travel_explore, SourcesPage()),
     _Dest('Wygląd', Icons.palette_outlined, Icons.palette, SettingsPage()),
   ];
+
+  /// Wydanie dla znajomych nie zmienia źródeł, więc nie ma zakładki „Źródła”.
+  static List<_Dest> get _dests => friendsEdition ? _all.where((d) => d.label != 'Źródła').toList() : _all;
 
   /// Na telefonie mieści się tyle zakładek; reszta jest pod „Więcej”.
   static const _bar = 4;
@@ -141,7 +145,7 @@ class _Logo extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          'Weeb\nRadar',
+          appName.replaceFirst(' ', '\n'),
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w900),
         ),

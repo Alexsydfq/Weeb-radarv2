@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/defaults.dart';
+import '../edition.dart';
 import 'app_scope.dart';
 import 'widgets/glass.dart';
 
@@ -63,7 +64,10 @@ class _ArtistsPageState extends State<ArtistsPage> {
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 4, 4, 12),
           child: Text(
-            'Startowa lista pochodzi z Twojego Spotify. Radar podświetla eventy, w których pada któreś z tych imion.',
+            byEdition(
+              'Startowa lista pochodzi z Twojego Spotify. Radar podświetla eventy, w których pada któreś z tych imion.',
+              'Dodaj artystów, których słuchasz. Radar podświetli eventy, w których pada któreś z tych imion.',
+            ),
             style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ),
@@ -86,24 +90,27 @@ class _ArtistsPageState extends State<ArtistsPage> {
         ),
         SectionTitle(
           '${s.artists.length} artystów',
-          trailing: TextButton.icon(
-            icon: const Icon(Icons.restore_rounded),
-            label: const Text('Lista ze Spotify'),
-            onPressed: () async {
-              final ok = await showDialog<bool>(
-                context: context,
-                builder: (c) => AlertDialog(
-                  title: const Text('Przywrócić listę ze Spotify?'),
-                  content: const Text('Twoje ręczne zmiany na liście artystów znikną.'),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Anuluj')),
-                    FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Przywróć')),
-                  ],
+          // Przywracanie listy Awexa nie ma sensu u znajomych.
+          trailing: friendsEdition
+              ? null
+              : TextButton.icon(
+                  icon: const Icon(Icons.restore_rounded),
+                  label: const Text('Lista ze Spotify'),
+                  onPressed: () async {
+                    final ok = await showDialog<bool>(
+                      context: context,
+                      builder: (c) => AlertDialog(
+                        title: const Text('Przywrócić listę ze Spotify?'),
+                        content: const Text('Twoje ręczne zmiany na liście artystów znikną.'),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Anuluj')),
+                          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Przywróć')),
+                        ],
+                      ),
+                    );
+                    if (ok == true) s.setArtists([...defaultArtists]);
+                  },
                 ),
-              );
-              if (ok == true) s.setArtists([...defaultArtists]);
-            },
-          ),
         ),
         Glass(
           child: Wrap(

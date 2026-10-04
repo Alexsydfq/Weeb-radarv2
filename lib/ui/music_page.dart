@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../edition.dart';
 import '../models/song.dart';
 import 'app_scope.dart';
 import 'refresh.dart';
@@ -55,8 +56,11 @@ class _MusicPageState extends State<MusicPage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 4, 4, 12),
             child: Text(
-              'Codziennie świeże kawałki Twoich artystów i trochę propozycji ✨ spoza listy. '
-              'Nie żebym wybierała je specjalnie dla Ciebie.',
+              byEdition(
+                'Codziennie świeże kawałki Twoich artystów i trochę propozycji ✨ spoza listy. '
+                    'Nie żebym wybierała je specjalnie dla Ciebie.',
+                'Nowe kawałki z ostatnich tygodni. ✨ to propozycje spoza głównej listy.',
+              ),
               style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
           ),
@@ -79,12 +83,12 @@ class _MusicPageState extends State<MusicPage> {
               padding: const EdgeInsets.all(28),
               child: Column(
                 children: [
-                  const Text('♪(´ε｀ )', style: TextStyle(fontSize: 26)),
+                  Text(byEdition('♪(´ε｀ )', '🎵'), style: const TextStyle(fontSize: 26)),
                   const SizedBox(height: 10),
                   Text(
                     s.songs.isEmpty
                         ? 'Jeszcze pusto. Skan wrzuca nowe kawałki raz dziennie rano, więc zajrzyj jutro.'
-                        : 'Nic tu nie pasuje. Zmień filtr, baka.',
+                        : byEdition('Nic tu nie pasuje. Zmień filtr, baka.', 'Nic tu nie pasuje. Zmień filtr.'),
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyLarge,
                   ),
