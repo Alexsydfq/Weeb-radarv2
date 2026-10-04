@@ -52,7 +52,7 @@ Ten sam kod, osobne wydanie: artefakty `RadarKoncertow-android` i `RadarKoncerto
 
 - Neutralna nazwa i teksty, spokojniejszy stalowy kolor i zwykły systemowy font.
 - Tylko czyta publiczny feed: bez tokenu GitHub i synchronizacji, bez zakładki „Źródła”, a „Odśwież” tylko pobiera dane.
-- Bez listy artystów i miejsc ze Spotify Awexa: lista „Twoi artyści” startuje pusta i każdy wpisuje swoich.
+- Bez rankingu Spotify Awexa: „Twoi artyści” startuje z tą samą listą, ale alfabetycznie i bez miejsc, a każdy może ją u siebie zmieniać.
 - Plany (Idę / Może / …) i gwiazdki zostają tylko na urządzeniu.
 - Powiadomienia są domyślnie wyłączone (można je włączyć w „Wygląd”), a na Androidzie apka nie prosi o zwolnienie z oszczędzania baterii.
 
