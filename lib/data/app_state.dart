@@ -214,7 +214,8 @@ class AppState extends ChangeNotifier {
     notified = p.getStringList('notify.seen')?.toSet();
     trayOnClose = p.getBool('win.tray') ?? trayOnClose;
     autostart = p.getBool('win.autostart') ?? autostart;
-    syncToken = p.getString('sync.token');
+    // Wydanie dla znajomych nigdy nie używa tokenu GitHub (tylko czyta publiczny feed).
+    syncToken = friendsEdition ? null : p.getString('sync.token');
     syncGistId = p.getString('sync.gist');
     final ls = p.getString('sync.last');
     lastSync = ls == null ? null : DateTime.tryParse(ls);
