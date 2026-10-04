@@ -38,12 +38,12 @@ android {
     productFlavors {
         create("full") {
             dimension = "edition"
-            resValue("string", "app_name", "Weeb Radar")
+            manifestPlaceholders["appName"] = "Weeb Radar"
         }
         create("friends") {
             dimension = "edition"
             applicationIdSuffix = ".friends"
-            resValue("string", "app_name", "Radar koncertów")
+            manifestPlaceholders["appName"] = "Radar koncertów"
         }
     }
 
