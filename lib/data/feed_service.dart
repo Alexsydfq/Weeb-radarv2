@@ -85,6 +85,29 @@ class FeedService {
     return Song.parseFeed(utf8.decode(res.bodyBytes));
   }
 
+  /// Lista obserwowanych artystów skanu (watch.json obok events.json).
+  /// Dopisują się do niej co tydzień artyści, których ostatnio słuchasz na Spotify.
+  Future<List<String>> fetchWatchArtists({required String feedUrl, String? githubToken}) async {
+    final i = feedUrl.lastIndexOf('/');
+    final url = i < 0 ? feedUrl : '${feedUrl.substring(0, i)}/watch.json';
+    final (uri, headers) = githubRequest(url, githubToken);
+    final res = await _client.get(uri, headers: headers).timeout(_timeout);
+    if (res.statusCode == 404) return const [];
+    if (res.statusCode != 200) throw 'HTTP ${res.statusCode}';
+    return parseWatchArtists(utf8.decode(res.bodyBytes));
+  }
+
+  static List<String> parseWatchArtists(String raw) {
+    try {
+      final j = jsonDecode(raw);
+      final list = j is Map ? j['artists'] : null;
+      if (list is! List) return const [];
+      return [for (final a in list) if (a is String && a.trim().isNotEmpty) a.trim()];
+    } catch (_) {
+      return const [];
+    }
+  }
+
   /// Feed z GitHuba przy podanym tokenie czytamy przez API, żeby działał też
   /// z prywatnego repo. Bez tokena zwykły raw.githubusercontent.com.
   static (Uri, Map<String, String>) githubRequest(String url, String? token) {

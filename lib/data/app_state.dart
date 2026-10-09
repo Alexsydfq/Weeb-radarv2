@@ -339,6 +339,11 @@ class AppState extends ChangeNotifier {
       } catch (e) {
         sourceStatus['Nowa muzyka'] = 'błąd: $e';
       }
+      try {
+        mergeWatchArtists(await _feed.fetchWatchArtists(feedUrl: feedUrl, githubToken: syncToken));
+      } catch (_) {
+        // Lista skanu jest tylko dodatkiem; bez niej apka działa jak dotąd.
+      }
       if (result.status.values.every((s) => s.startsWith('błąd'))) {
         lastError = 'Nie udało się pobrać żadnego źródła. Pokazuję zapisane dane.';
       }
@@ -348,6 +353,25 @@ class AppState extends ChangeNotifier {
       loading = false;
       notifyListeners();
     }
+  }
+
+  /// Dopisuje do Twojej listy artystów tych, którzy doszli do listy skanu
+  /// (np. z cotygodniowego przeglądu Spotify). Za pierwszym razem tylko
+  /// zapamiętuje stan, a usuniętych przez Ciebie nie wskrzesza.
+  void mergeWatchArtists(List<String> remote) {
+    if (remote.length < 20) return; // pusty albo ucięty plik
+    final known = _prefs.getStringList('taste.knownWatch')?.toSet();
+    if (known != null) {
+      final have = {for (final a in artists) a.toLowerCase()};
+      final fresh = remote.where((a) => !known.contains(a) && !have.contains(a.toLowerCase())).toList();
+      if (fresh.isNotEmpty) {
+        artists = [...artists, ...fresh];
+        _patterns.clear();
+        _prefs.setStringList('taste.artists', artists);
+        notifyListeners();
+      }
+    }
+    _prefs.setStringList('taste.knownWatch', remote);
   }
 
   // ======================================================================
