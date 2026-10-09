@@ -1,10 +1,10 @@
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
 import '../data/app_state.dart';
 import '../edition.dart';
+import '../platform/bg_store.dart';
 import 'app_scope.dart';
 
 /// Tło całej aplikacji: Twój obrazek albo GIF, z rozmyciem i przyciemnieniem.
@@ -22,19 +22,19 @@ class AppBackground extends StatelessWidget {
 
     Widget layer;
     if (path != null) {
-      final file = File(path);
+      final image = backgroundImage(path);
       layer = s.backgroundFit == BackgroundFit.tile
           ? DecoratedBox(
               decoration: BoxDecoration(
                 image: DecorationImage(
-                  image: FileImage(file),
+                  image: image,
                   repeat: ImageRepeat.repeat,
                   scale: 1.5,
                 ),
               ),
             )
-          : Image.file(
-              file,
+          : Image(
+              image: image,
               key: ValueKey(path),
               fit: s.backgroundFit == BackgroundFit.contain ? BoxFit.contain : BoxFit.cover,
               width: double.infinity,

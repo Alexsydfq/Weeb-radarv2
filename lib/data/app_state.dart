@@ -1,16 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../edition.dart';
 import '../models/event.dart';
 import '../models/song.dart';
+import '../platform/bg_store.dart';
 import 'defaults.dart';
 import 'feed_service.dart';
 import 'sync_service.dart';
@@ -160,6 +159,9 @@ class AppState extends ChangeNotifier {
 
   Future<void> init() async {
     _loadPrefs();
+    if (backgroundPath != null && !await loadBackground(backgroundPath!)) {
+      backgroundPath = null;
+    }
     await _loadCachedEvents();
     notifyListeners();
     unawaited(refresh());
@@ -172,9 +174,6 @@ class AppState extends ChangeNotifier {
   void _loadPrefs() {
     final p = _prefs;
     backgroundPath = p.getString('bg.path');
-    if (backgroundPath != null && !File(backgroundPath!).existsSync()) {
-      backgroundPath = null;
-    }
     backgroundBlur = p.getDouble('bg.blur') ?? backgroundBlur;
     backgroundDim = p.getDouble('bg.dim') ?? backgroundDim;
     backgroundFit = BackgroundFit.values.firstWhere(
@@ -769,13 +768,10 @@ class AppState extends ChangeNotifier {
       return 'Ten format nie jest obsługiwany: .$ext';
     }
     final bytes = await picked.xFile.readAsBytes();
-    final dir = Directory('${(await getApplicationSupportDirectory()).path}/backgrounds');
-    await dir.create(recursive: true);
-    final file = File('${dir.path}/bg_${DateTime.now().millisecondsSinceEpoch}.$ext');
-    await file.writeAsBytes(bytes, flush: true);
+    final path = await saveBackground(bytes, ext);
     await _deleteOldBackground();
-    backgroundPath = file.path;
-    await _prefs.setString('bg.path', file.path);
+    backgroundPath = path;
+    await _prefs.setString('bg.path', path);
     notifyListeners();
     return null;
   }
@@ -790,9 +786,7 @@ class AppState extends ChangeNotifier {
   Future<void> _deleteOldBackground() async {
     final old = backgroundPath;
     if (old == null) return;
-    try {
-      await File(old).delete();
-    } catch (_) {}
+    await deleteBackground(old);
   }
 
   void setFeedUrl(String url) {
