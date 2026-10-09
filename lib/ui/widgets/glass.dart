@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../app_scope.dart';
@@ -28,26 +29,26 @@ class Glass extends StatelessWidget {
     final s = AppScope.of(context);
     final scheme = Theme.of(context).colorScheme;
     final br = BorderRadius.circular(radius);
-    return ClipRRect(
-      borderRadius: br,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Material(
-          color: scheme.surface.withValues(alpha: s.cardOpacity),
-          shape: RoundedRectangleBorder(
-            borderRadius: br,
-            side: BorderSide(
-              color: highlight ?? scheme.onSurface.withValues(alpha: 0.08),
-              width: highlight != null ? 2.2 : 1,
-            ),
-          ),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: br,
-            child: Padding(padding: padding, child: child),
-          ),
+    // W przeglądarce rozmycie pod każdą kartą to kilka fps na iPadzie,
+    // więc tam karta jest bez blura, za to trochę mniej przezroczysta.
+    final card = Material(
+      color: scheme.surface.withValues(alpha: kIsWeb ? (s.cardOpacity + 0.25).clamp(0.0, 1.0) : s.cardOpacity),
+      shape: RoundedRectangleBorder(
+        borderRadius: br,
+        side: BorderSide(
+          color: highlight ?? scheme.onSurface.withValues(alpha: 0.08),
+          width: highlight != null ? 2.2 : 1,
         ),
       ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: br,
+        child: Padding(padding: padding, child: child),
+      ),
+    );
+    return ClipRRect(
+      borderRadius: br,
+      child: kIsWeb ? card : BackdropFilter(filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14), child: card),
     );
   }
 }

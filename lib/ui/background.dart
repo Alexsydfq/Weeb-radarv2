@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../data/app_state.dart';
@@ -50,18 +51,23 @@ class AppBackground extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        ColoredBox(color: dark ? const Color(0xFF0B0B14) : const Color(0xFFF4F2FA)),
-        if (s.backgroundBlur > 0 && path != null)
-          ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: s.backgroundBlur, sigmaY: s.backgroundBlur),
-            child: layer,
-          )
-        else
-          layer,
-        if (path != null)
-          ColoredBox(
-            color: (dark ? Colors.black : Colors.white).withValues(alpha: s.backgroundDim),
+        RepaintBoundary(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              ColoredBox(color: dark ? const Color(0xFF0B0B14) : const Color(0xFFF4F2FA)),
+              if (s.backgroundBlur > 0 && path != null)
+                ImageFiltered(
+                  imageFilter: ImageFilter.blur(sigmaX: s.backgroundBlur, sigmaY: s.backgroundBlur),
+                  child: layer,
+                )
+              else
+                layer,
+              if (path != null)
+                ColoredBox(color: (dark ? Colors.black : Colors.white).withValues(alpha: s.backgroundDim)),
+            ],
           ),
+        ),
         child,
       ],
     );
@@ -80,8 +86,18 @@ class _GradientBackground extends StatefulWidget {
 
 class _GradientBackgroundState extends State<_GradientBackground>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(seconds: 18))..repeat(reverse: true);
+  // W przeglądarce gradient stoi: animacja przerysowuje cały ekran co klatkę.
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 18),
+    value: 0.5,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (!kIsWeb) _c.repeat(reverse: true);
+  }
 
   @override
   void dispose() {
