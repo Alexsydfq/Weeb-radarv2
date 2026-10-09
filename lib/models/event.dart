@@ -230,6 +230,9 @@ class RadarEvent {
   String get searchable => '$artist $title $note ${lineup.join(' · ')} ${about ?? ''}'.toLowerCase();
 }
 
+/// Klucz zmiany w zbiorach „już powiadomione” i „przeczytane”.
+String changeKey(RadarEvent e) => '${e.id}~${e.changeNote}';
+
 /// Dzisiejsza data bez godziny.
 DateTime todayDate() {
   final n = DateTime.now();

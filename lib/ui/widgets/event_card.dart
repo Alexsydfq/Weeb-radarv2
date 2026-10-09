@@ -7,8 +7,11 @@ import '../app_scope.dart';
 import '../event_detail.dart';
 import '../util.dart';
 import 'glass.dart';
+import 'unread.dart';
 
 /// Karta eventu na liście: data, tytuł, flagi tras, dopasowanie do gustu.
+/// Nieprzeczytane (nowe albo ze świeżą zmianą) mają kropkę, pogrubiony tytuł
+/// i pigułkę NOWE / ZMIANA, jak nieprzeczytane maile.
 class EventCard extends StatelessWidget {
   const EventCard({super.key, required this.event});
 
@@ -24,6 +27,19 @@ class EventCard extends StatelessWidget {
     final rank = s.spotifyRank(event);
     final next = event.nextStop;
     final kc = kindColor(event.kind);
+    final unreadNew = s.isUnreadNew(event);
+    final unreadChange = s.isUnreadChange(event);
+    final unread = unreadNew || unreadChange;
+    final muted = theme.colorScheme.onSurfaceVariant;
+
+    final pills = [
+      if (unreadNew) const Pill('NOWE', color: unreadColor, icon: Icons.auto_awesome),
+      if (unreadChange) const Pill('ZMIANA', color: unreadColor, icon: Icons.update_rounded),
+      if (matched.isNotEmpty) Pill(spotifyLabel(rank), color: spotifyGreen, icon: Icons.headphones_rounded),
+      if (plan != null) Pill(planLabels[plan]!, color: planColor(plan), icon: planIcon(plan)),
+      if (event.origin == EventOrigin.vocadb) const Pill('VocaDB', color: Color(0xFF39C5BB)),
+      if (event.origin == EventOrigin.manual) const Pill('mój', color: Color(0xFFFFD23F)),
+    ];
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -42,45 +58,68 @@ class EventCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
+                  if (pills.isNotEmpty) ...[
+                    Wrap(spacing: 6, runSpacing: 4, children: pills),
+                    const SizedBox(height: 6),
+                  ],
+                  Row(
                     children: [
-                      if (matched.isNotEmpty)
-                        Pill(spotifyLabel(rank), color: spotifyGreen, icon: Icons.headphones_rounded),
-                      if (plan != null) Pill(planLabels[plan]!, color: planColor(plan), icon: planIcon(plan)),
-                      Pill(kindLabels[event.kind] ?? event.kind, color: kc, icon: kindIcon(event.kind)),
-                      if (s.isNew(event)) const Pill('NOWE', color: Color(0xFFFF5370), icon: Icons.auto_awesome),
-                      if (event.origin == EventOrigin.vocadb)
-                        const Pill('VocaDB', color: Color(0xFF39C5BB)),
-                      if (event.origin == EventOrigin.manual)
-                        const Pill('mój', color: Color(0xFFFFD23F)),
-                      Pill(countdown(event.nextDate), color: theme.colorScheme.onSurfaceVariant),
+                      if (unread) ...[const UnreadDot(), const SizedBox(width: 7)],
+                      Expanded(
+                        child: Text(
+                          event.artist,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: unread ? FontWeight.w900 : FontWeight.w500,
+                          ),
+                        ),
+                      ),
                     ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    event.artist,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
                   ),
                   if (event.title.isNotEmpty && event.title != event.artist)
                     Text(
                       event.title,
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: unread ? FontWeight.w600 : null,
+                        color: unread ? null : muted,
+                      ),
                     ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(kindIcon(event.kind), size: 14, color: kc),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          '${kindLabels[event.kind] ?? event.kind} · ${countdown(event.nextDate)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelMedium?.copyWith(color: kc, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
                   Text(
                     _whereLine(event, next),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.bodySmall?.copyWith(color: muted),
                   ),
+                  if (unreadChange) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      event.changeNote!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelMedium?.copyWith(color: unreadColor, fontWeight: FontWeight.w700),
+                    ),
+                  ],
                   if (matched.isNotEmpty) ...[
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Row(
                       children: [
                         const Icon(Icons.headphones_rounded, size: 14, color: spotifyGreen),

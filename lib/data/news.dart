@@ -18,9 +18,6 @@ class NewsItem {
   bool get isChange => change != null;
 }
 
-/// Klucz zmiany w zbiorze „już powiadomione”.
-String changeKey(RadarEvent e) => '${e.id}~${e.changeNote}';
-
 /// Porównuje świeżo pobrane eventy z tym, co już było w powiadomieniach
 /// (na tym albo na drugim urządzeniu, przez gista) i zwraca nowości.
 /// Pierwsze sprawdzenie zgłasza wszystko, co pasuje, a potem każdy event

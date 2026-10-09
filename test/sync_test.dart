@@ -125,6 +125,20 @@ void main() {
     expect(phone.notified, {'miku', 'deco', 'vocafest'});
   });
 
+  test('przejrzane eventy i kawałki sumują się między urządzeniami', () async {
+    final gh = FakeGitHub();
+    final phone = await device(gh, prefs: {'sync.token': 'good'});
+    phone.readIds.addAll(['miku', 'song:hibana']);
+    await phone.syncNow();
+    final pc = await device(gh, prefs: {'sync.token': 'good'});
+    await pc.syncNow();
+    expect(pc.readIds, containsAll(['miku', 'song:hibana']));
+    pc.readIds.add('deco');
+    await pc.syncNow();
+    await phone.syncNow();
+    expect(phone.readIds, containsAll(['miku', 'song:hibana', 'deco']));
+  });
+
   test('nowi domyślni artyści dochodzą, usunięci nie wracają', () async {
     final old = await device(FakeGitHub(), prefs: {'taste.artists': ['Ado', 'Moja Kapela']});
     expect(old.artists, containsAll(['Ado', 'Moja Kapela', 'Nilfruits', 'DECO*27']));

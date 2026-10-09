@@ -85,25 +85,33 @@ Map<String, PlanEntry> decodeEntries(String? raw) {
 }
 
 /// Eventy (i zmiany), o których już było powiadomienie na którymś urządzeniu.
-Set<String> decodeNotified(String? raw) {
+Set<String> decodeNotified(String? raw) => _decodeSet(raw, 'notified');
+
+/// Eventy, zmiany i kawałki przeczytane na którymś urządzeniu.
+Set<String> decodeRead(String? raw) => _decodeSet(raw, 'read');
+
+Set<String> _decodeSet(String? raw, String key) {
   if (raw == null || raw.isEmpty) return {};
   try {
     final j = jsonDecode(raw);
-    if (j is Map && j['notified'] is List) return (j['notified'] as List).whereType<String>().toSet();
+    if (j is Map && j[key] is List) return (j[key] as List).whereType<String>().toSet();
   } catch (_) {}
   return {};
 }
 
-String encodeEntries(Map<String, PlanEntry> entries, {Set<String> notified = const {}}) => jsonEncode({
+String encodeEntries(Map<String, PlanEntry> entries,
+        {Set<String> notified = const {}, Set<String> read = const {}}) =>
+    jsonEncode({
       'app': 'weeb-radar',
       'version': 1,
       'updated': DateTime.now().toUtc().toIso8601String(),
       'entries': {for (final e in entries.entries) e.key: e.value.toJson()},
       if (notified.isNotEmpty) 'notified': (notified.toList()..sort()),
+      if (read.isNotEmpty) 'read': (read.toList()..sort()),
     });
 
 /// Zawartość pliku w gistcie.
-typedef SyncDoc = ({Map<String, PlanEntry> entries, Set<String> notified});
+typedef SyncDoc = ({Map<String, PlanEntry> entries, Set<String> notified, Set<String> read});
 
 class SyncException implements Exception {
   SyncException(this.message);
@@ -152,14 +160,15 @@ class SyncService {
     return null;
   }
 
-  Future<String> createGist(String token, Map<String, PlanEntry> entries, {Set<String> notified = const {}}) async {
+  Future<String> createGist(String token, Map<String, PlanEntry> entries,
+      {Set<String> notified = const {}, Set<String> read = const {}}) async {
     final r = await _client.post(
       Uri.parse('$_api/gists'),
       headers: _headers(token),
       body: jsonEncode({
         'description': 'Weeb Radar: synchronizacja planów (Idę / Może / Zainteresowany / Nie idę)',
         'public': false,
-        'files': {fileName: {'content': encodeEntries(entries, notified: notified)}},
+        'files': {fileName: {'content': encodeEntries(entries, notified: notified, read: read)}},
       }),
     );
     if (r.statusCode != 201) _fail(r);
@@ -177,16 +186,16 @@ class SyncService {
       final raw = await _client.get(Uri.parse(file['raw_url'] as String), headers: _headers(token));
       if (raw.statusCode == 200) content = raw.body;
     }
-    return (entries: decodeEntries(content), notified: decodeNotified(content));
+    return (entries: decodeEntries(content), notified: decodeNotified(content), read: decodeRead(content));
   }
 
   Future<void> write(String token, String gistId, Map<String, PlanEntry> entries,
-      {Set<String> notified = const {}}) async {
+      {Set<String> notified = const {}, Set<String> read = const {}}) async {
     final r = await _client.patch(
       Uri.parse('$_api/gists/$gistId'),
       headers: _headers(token),
       body: jsonEncode({
-        'files': {fileName: {'content': encodeEntries(entries, notified: notified)}},
+        'files': {fileName: {'content': encodeEntries(entries, notified: notified, read: read)}},
       }),
     );
     if (r.statusCode != 200) _fail(r);
@@ -194,30 +203,38 @@ class SyncService {
 
   /// Pełna runda: pobierz, połącz, odeślij. Zwraca połączony stan i id gista.
   /// [notified] łączy się jako suma, żeby to samo powiadomienie nie wyskoczyło
-  /// i na telefonie, i na komputerze.
-  Future<({Map<String, PlanEntry> entries, Set<String> notified, String gistId})> sync(
+  /// i na telefonie, i na komputerze. [read] (przeczytane) tak samo.
+  Future<({Map<String, PlanEntry> entries, Set<String> notified, Set<String> read, String gistId})> sync(
     String token,
     String? gistId,
     Map<String, PlanEntry> local, {
     Set<String> notified = const {},
+    Set<String> read = const {},
   }) async {
     String? id = gistId;
-    SyncDoc? remote = id == null ? null : await read(token, id);
+    SyncDoc? remote = id == null ? null : await this.read(token, id);
     if (remote == null) {
       // Pierwsze połączenie albo gist zniknął: szukamy go na koncie, a jak nie ma, zakładamy nowy.
       id = await findGist(token);
-      remote = id == null ? null : await read(token, id);
+      remote = id == null ? null : await this.read(token, id);
     }
     if (id == null || remote == null) {
-      return (entries: local, notified: notified, gistId: await createGist(token, local, notified: notified));
+      return (
+        entries: local,
+        notified: notified,
+        read: read,
+        gistId: await createGist(token, local, notified: notified, read: read),
+      );
     }
     final theirs = remote.entries;
     final merged = mergeEntries(local, theirs);
     final allNotified = {...remote.notified, ...notified};
+    final allRead = {...remote.read, ...read};
     final changed = merged.length != theirs.length ||
         merged.entries.any((e) => theirs[e.key] != e.value) ||
-        allNotified.length != remote.notified.length;
-    if (changed) await write(token, id, merged, notified: allNotified);
-    return (entries: merged, notified: allNotified, gistId: id);
+        allNotified.length != remote.notified.length ||
+        allRead.length != remote.read.length;
+    if (changed) await write(token, id, merged, notified: allNotified, read: allRead);
+    return (entries: merged, notified: allNotified, read: allRead, gistId: id);
   }
 }

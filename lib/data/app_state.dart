@@ -74,6 +74,16 @@ class AppState extends ChangeNotifier {
   /// Windows: uruchamiaj (schowaną) razem z systemem.
   bool autostart = false;
 
+  // ---------- przeczytane ----------
+  /// Eventy, ich zmiany i kawałki, które już widziałeś, jak przeczytane maile.
+  Set<String> readIds = {};
+
+  /// Od kiedy ta wersja śledzi przeczytane. Wszystko znalezione wcześniej niż
+  /// [unreadWindow] dni przed tą datą uznajemy za stare, żeby po aktualizacji
+  /// nie wyskoczyło nagle kilkadziesiąt „nowych”.
+  DateTime? readSince;
+  static const unreadWindow = 3;
+
   // ---------- synchronizacja ----------
   String? syncToken;
   String? syncGistId;
@@ -212,6 +222,12 @@ class AppState extends ChangeNotifier {
     notifyJapan = p.getBool('notify.japan') ?? notifyJapan;
     notifyMusic = p.getBool('notify.music') ?? notifyMusic;
     notified = p.getStringList('notify.seen')?.toSet();
+    readIds = p.getStringList('read.ids')?.toSet() ?? {};
+    readSince = DateTime.tryParse(p.getString('read.since') ?? '');
+    if (readSince == null) {
+      readSince = todayDate();
+      p.setString('read.since', readSince!.toIso8601String().substring(0, 10));
+    }
     trayOnClose = p.getBool('win.tray') ?? trayOnClose;
     autostart = p.getBool('win.autostart') ?? autostart;
     // Wydanie dla znajomych nigdy nie używa tokenu GitHub (tylko czyta publiczny feed).
@@ -477,6 +493,55 @@ class AppState extends ChangeNotifier {
   }
 
   // ======================================================================
+  // Nowe i przeczytane (jak w Gmailu)
+  // ======================================================================
+
+  bool _recent(DateTime? d) {
+    final since = readSince;
+    if (d == null || since == null) return false;
+    return !d.isBefore(since.subtract(const Duration(days: unreadWindow)));
+  }
+
+  /// Event, którego jeszcze nie otworzyłeś (nowy albo ze świeżą zmianą).
+  bool isUnread(RadarEvent e) => isUnreadNew(e) || isUnreadChange(e);
+
+  /// Nowy event, którego jeszcze nie otworzyłeś.
+  bool isUnreadNew(RadarEvent e) => !readIds.contains(e.id) && _recent(e.foundAt);
+
+  /// Znany event ze zmianą, której jeszcze nie widziałeś.
+  bool isUnreadChange(RadarEvent e) =>
+      e.changeNote != null &&
+      !isUnreadNew(e) &&
+      !readIds.contains(changeKey(e)) &&
+      _recent(e.updatedAt ?? e.foundAt);
+
+  bool isSongUnread(Song x) => !readIds.contains(x.key) && _recent(x.foundAt ?? x.released);
+
+  /// Nieprzeczytane do licznika: bez „Nie idę”.
+  int unreadCount(Iterable<RadarEvent> list) =>
+      list.where((e) => planOf(e.id) != Plan.notGoing && isUnread(e)).length;
+
+  int get unreadSongs => songs.where(isSongUnread).length;
+
+  void markRead(RadarEvent e) => markAllRead([e]);
+
+  void markSongRead(Song x) => _addRead([x.key]);
+
+  void markAllRead(Iterable<RadarEvent> list, {Iterable<Song> songs = const []}) => _addRead([
+        for (final e in list) ...[e.id, if (e.changeNote != null) changeKey(e)],
+        for (final x in songs) x.key,
+      ]);
+
+  void _addRead(List<String> keys, {bool sync = true}) {
+    final before = readIds.length;
+    readIds.addAll(keys);
+    if (readIds.length == before) return;
+    _prefs.setStringList('read.ids', readIds.toList());
+    if (!_disposed) notifyListeners();
+    if (sync) _scheduleSync();
+  }
+
+  // ======================================================================
   // Mutacje
   // ======================================================================
 
@@ -602,10 +667,11 @@ class AppState extends ChangeNotifier {
     syncError = null;
     notifyListeners();
     try {
-      final r = await _sync.sync(syncToken!, syncGistId, entries, notified: notified ?? const {});
+      final r = await _sync.sync(syncToken!, syncGistId, entries, notified: notified ?? const {}, read: readIds);
       // W trakcie mogły dojść lokalne zmiany: łączymy jeszcze raz.
       entries = mergeEntries(entries, r.entries);
       if (r.notified.isNotEmpty) await markNotified(r.notified, sync: false);
+      _addRead(r.read.toList(), sync: false);
       syncGistId = r.gistId;
       lastSync = DateTime.now();
       _saveEntries();
@@ -761,6 +827,7 @@ class AppState extends ChangeNotifier {
 
   void saveManualEvent(RadarEvent e) {
     manualEvents = [...manualEvents.where((m) => m.id != e.id), e];
+    markRead(e);
     _persistManual();
   }
 

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../edition.dart';
+import '../data/app_state.dart';
+import 'app_scope.dart';
 import 'artists_page.dart';
 import 'background.dart';
 import 'calendar_page.dart';
@@ -10,6 +12,7 @@ import 'music_page.dart';
 import 'radar_page.dart';
 import 'settings_page.dart';
 import 'sources_page.dart';
+import 'widgets/unread.dart';
 
 class _Dest {
   final String label;
@@ -70,8 +73,28 @@ class _ShellState extends State<Shell> {
     );
   }
 
+  /// Licznik nowości na zakładce, jak liczba nieprzeczytanych w skrzynce.
+  /// Radar liczy tylko to, co pod Twój gust, żeby nie krzyczał o wszystkim.
+  int _unread(AppState s, String label) => switch (label) {
+    'Radar' => s.unreadCount(s.upcomingEurope.where(s.isForYou)),
+    'Muzyka' => s.unreadSongs,
+    'Japonia' => s.unreadCount(s.upcomingJapan),
+    _ => 0,
+  };
+
+  Widget _icon(AppState s, _Dest d, IconData icon) {
+    final n = _unread(s, d.label);
+    return Badge.count(
+      count: n,
+      isLabelVisible: n > 0,
+      backgroundColor: unreadColor,
+      child: Icon(icon),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final s = AppScope.of(context);
     final wide = MediaQuery.sizeOf(context).width >= 760;
     final body = AnimatedSwitcher(
       duration: const Duration(milliseconds: 260),
@@ -96,8 +119,8 @@ class _ShellState extends State<Shell> {
                     destinations: [
                       for (final d in _dests)
                         NavigationRailDestination(
-                          icon: Icon(d.icon),
-                          selectedIcon: Icon(d.selected),
+                          icon: _icon(s, d, d.icon),
+                          selectedIcon: _icon(s, d, d.selected),
                           label: Text(d.label),
                         ),
                     ],
@@ -111,10 +134,14 @@ class _ShellState extends State<Shell> {
             : NavigationBar(
                 selectedIndex: _index < _bar ? _index : _bar,
                 onDestinationSelected: (i) => i < _bar ? setState(() => _index = i) : _more(context),
-                labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
                 destinations: [
                   for (final d in _dests.take(_bar))
-                    NavigationDestination(icon: Icon(d.icon), selectedIcon: Icon(d.selected), label: d.label),
+                    NavigationDestination(
+                      icon: _icon(s, d, d.icon),
+                      selectedIcon: _icon(s, d, d.selected),
+                      label: d.label,
+                    ),
                   NavigationDestination(
                     icon: const Icon(Icons.more_horiz_rounded),
                     selectedIcon: const Icon(Icons.more_horiz_rounded),

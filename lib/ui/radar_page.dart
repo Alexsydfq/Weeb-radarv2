@@ -9,6 +9,7 @@ import 'refresh.dart';
 import 'util.dart';
 import 'widgets/event_card.dart';
 import 'widgets/glass.dart';
+import 'widgets/unread.dart';
 
 enum _Sort { date, match }
 
@@ -30,6 +31,7 @@ class _RadarPageState extends State<RadarPage> {
   final Set<String> _kinds = {};
   String? _country;
   _Sort _sort = _Sort.date;
+  bool _onlyNew = false;
 
   @override
   void dispose() {
@@ -45,6 +47,7 @@ class _RadarPageState extends State<RadarPage> {
     final q = _search.text.trim().toLowerCase();
 
     var list = upcoming.where((e) {
+      if (_onlyNew && !s.isUnread(e)) return false;
       if (_scope == _Scope.forYou && !s.isForYou(e)) return false;
       if (_scope == _Scope.spotify && !s.isSpotify(e)) return false;
       if (_kinds.isNotEmpty && !_kinds.contains(e.kind)) return false;
@@ -102,7 +105,22 @@ class _RadarPageState extends State<RadarPage> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: _Stats(events: upcoming),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  InboxBar(
+                    count: s.unreadCount(upcoming),
+                    onlyNew: _onlyNew,
+                    onOnlyNew: (v) => setState(() => _onlyNew = v),
+                    onMarkAll: () => setState(() {
+                      s.markAllRead(upcoming);
+                      _onlyNew = false;
+                    }),
+                  ),
+                  const SizedBox(height: 6),
+                  _Stats(events: upcoming),
+                ],
+              ),
             ),
           ),
           SliverToBoxAdapter(
@@ -208,7 +226,9 @@ class _RadarPageState extends State<RadarPage> {
                     Text(byEdition('(´・ω・`)', '🔍'), style: const TextStyle(fontSize: 34)),
                     const SizedBox(height: 8),
                     Text(
-                      _forYou
+                      _onlyNew
+                          ? 'Nic nowego z tymi filtrami.'
+                          : _forYou
                           ? 'Nic pod Twój gust z tymi filtrami. Przełącz na „Wszystko” albo dopisz artystów.'
                           : 'Brak eventów dla tych filtrów.',
                       textAlign: TextAlign.center,
@@ -232,7 +252,7 @@ class _RadarPageState extends State<RadarPage> {
                   return SliverGrid.builder(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: cols,
-                      mainAxisExtent: 196,
+                      mainAxisExtent: 214,
                       crossAxisSpacing: 10,
                     ),
                     itemCount: list.length,
@@ -446,6 +466,10 @@ class _HeroCard extends StatelessWidget {
                                 ),
                           const SizedBox(width: 6),
                           Pill(countdown(event.nextDate), color: Colors.white, icon: Icons.timer_outlined),
+                          if (s.isUnread(event)) ...[
+                            const SizedBox(width: 6),
+                            Pill(s.isUnreadNew(event) ? 'NOWE' : 'ZMIANA', color: Colors.white, icon: Icons.auto_awesome),
+                          ],
                         ],
                       ),
                       const Spacer(),
@@ -500,38 +524,26 @@ class _Stats extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    final theme = Theme.of(context);
     final mine = events.where(s.isSpotify).length;
-    final home = events.where((e) => e.countries.any(s.isHome)).length;
     final soon = events.where((e) => e.nextDate.difference(todayDate()).inDays <= 30).length;
-    Widget tile(String n, String label, IconData icon) => Expanded(
-      child: Glass(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        child: Column(
-          children: [
-            Icon(icon, size: 20, color: s.accent),
-            const SizedBox(height: 4),
-            Text(n, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelSmall,
-            ),
-          ],
-        ),
-      ),
+    final style = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    Widget item(IconData icon, String text) => Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [Icon(icon, size: 15, color: s.accent), const SizedBox(width: 4), Text(text, style: style)],
     );
-    return Row(
-      children: [
-        tile('${events.length}', 'nadchodzące', Icons.event_available_rounded),
-        const SizedBox(width: 8),
-        tile('$mine', byEdition('ze Spotify', 'Twoi artyści'), Icons.headphones_rounded),
-        const SizedBox(width: 8),
-        tile('$home', s.homeCountry == 'EU' ? 'w Europie' : '${flagOf(s.homeCountry)} u Ciebie', Icons.home_rounded),
-        const SizedBox(width: 8),
-        tile('$soon', 'w 30 dni', Icons.bolt_rounded),
-      ],
+    // Jedna spokojna linijka zamiast czterech kafelków: lista eventów zaczyna się wyżej.
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Wrap(
+        spacing: 14,
+        runSpacing: 4,
+        children: [
+          item(Icons.event_available_rounded, '${events.length} nadchodzących'),
+          item(Icons.headphones_rounded, '$mine ${byEdition('ze Spotify', 'Twoich artystów')}'),
+          item(Icons.bolt_rounded, '$soon w 30 dni'),
+        ],
+      ),
     );
   }
 }

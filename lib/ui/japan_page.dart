@@ -7,6 +7,7 @@ import 'refresh.dart';
 import 'util.dart';
 import 'widgets/event_card.dart';
 import 'widgets/glass.dart';
+import 'widgets/unread.dart';
 
 enum _Scope { spotify, forYou, all }
 
@@ -21,6 +22,7 @@ class JapanPage extends StatefulWidget {
 
 class _JapanPageState extends State<JapanPage> {
   _Scope _scope = _Scope.forYou;
+  bool _onlyNew = false;
   final _search = TextEditingController();
 
   @override
@@ -36,6 +38,7 @@ class _JapanPageState extends State<JapanPage> {
     final all = s.upcomingJapan;
     final q = _search.text.trim().toLowerCase();
     final list = all.where((e) {
+      if (_onlyNew && !s.isUnread(e)) return false;
       if (_scope == _Scope.forYou && !s.isForYou(e)) return false;
       if (_scope == _Scope.spotify && !s.isSpotify(e)) return false;
       if (q.isNotEmpty) {
@@ -109,7 +112,17 @@ class _JapanPageState extends State<JapanPage> {
               onSelectionChanged: (v) => setState(() => _scope = v.first),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
+          InboxBar(
+            count: s.unreadCount(all),
+            onlyNew: _onlyNew,
+            onOnlyNew: (v) => setState(() => _onlyNew = v),
+            onMarkAll: () => setState(() {
+              s.markAllRead(all);
+              _onlyNew = false;
+            }),
+          ),
+          const SizedBox(height: 4),
           if (list.isEmpty)
             Padding(
               padding: const EdgeInsets.all(28),
@@ -123,6 +136,8 @@ class _JapanPageState extends State<JapanPage> {
                             'Jeszcze nic z Japonii. Skan dorzuca je dwa razy w tygodniu, więc cierpliwości, baka.',
                             'Jeszcze nic z Japonii. Nowe wydarzenia pojawiają się tu kilka razy w tygodniu.',
                           )
+                        : _onlyNew
+                        ? 'Nic nowego z tym filtrem.'
                         : 'Nic nie pasuje do filtra. Spróbuj „Wszystko”.',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyLarge,

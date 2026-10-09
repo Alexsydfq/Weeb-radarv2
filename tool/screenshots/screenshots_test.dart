@@ -15,6 +15,7 @@ import 'package:weeb_radar/data/app_state.dart';
 import 'package:weeb_radar/data/feed_service.dart';
 import 'package:weeb_radar/edition.dart';
 import 'package:weeb_radar/main.dart';
+import 'package:weeb_radar/models/event.dart';
 import 'package:weeb_radar/ui/theme.dart';
 
 Future<void> _font(String family, List<String> files) async {
@@ -53,7 +54,11 @@ void main() {
     });
     // Przykładowy line-up i info, żeby było widać, jak wyglądają w szczegółach eventu.
     final raw = jsonDecode(File('assets/events_fallback.json').readAsStringSync()) as Map;
+    // Kilka świeżych znalezisk, żeby było widać nieprzeczytane (kropka, NOWE, liczniki).
+    final today = todayDate().toIso8601String().substring(0, 10);
     for (final e in raw['events'] as List) {
+      final id = e['id'] as String;
+      if (id.contains('neonya') || id.contains('mondocon') || id.contains('manga-barcelona')) e['foundAt'] = today;
       if (e['id'] == '2026-11-hatsune-miku-expo-europe') {
         e['lineup'] = ['Hatsune Miku', 'Kagamine Rin', 'Kagamine Len', 'Megurine Luka', 'KAITO', 'MEIKO', 'DJ Sample'];
         e['facts'] = [
@@ -61,7 +66,7 @@ void main() {
           {'k': 'Godziny', 'v': 'drzwi 18:30, start 19:30'},
           {'k': 'Wiek', 'v': 'bez ograniczeń'},
         ];
-        e['updatedAt'] = '2026-10-01';
+        e['updatedAt'] = today;
         e['changeNote'] = 'Doszedł koncert w Lizbonie';
         e['about'] =
             'Wirtualna piosenkarka Vocaloid od Crypton Future Media. Znasz ją z tysięcy piosenek producentów '
@@ -109,6 +114,7 @@ void main() {
           'title': 'Onee-sama♡Love Call',
           'artist': 'Laplus Darknesss × IOSYS',
           'released': '2026-10-01',
+          'foundAt': today,
           'kind': 'singiel',
           'pick': true,
           'url': 'https://www.youtube.com/@LaplusDarknesss',
@@ -120,6 +126,7 @@ void main() {
           'title': 'Hibana (Reloaded)',
           'artist': 'DECO*27',
           'released': '2026-09-30',
+          'foundAt': today,
           'kind': 'singiel',
           'about': 'Jeden z najpopularniejszych producentów Vocaloid, autor „Rabbit Hole”.',
           'songAbout': 'Nowa wersja klasyka z Miku, mocniejszy rockowy miks.',

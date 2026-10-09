@@ -14,10 +14,11 @@ Aplikacja na **Androida i Windowsa** (Flutter), która wyszukuje koncerty, trasy
 
 ## Co umie
 
-- **Radar**: karuzela poleceń, statystyki, wyszukiwarka, filtry (Dla mnie / Wszystko, rodzaj, kraj), sortowanie po dacie albo dopasowaniu, odświeżanie przeciągnięciem.
+- **Radar**: karuzela poleceń, statystyki w jednej linijce, wyszukiwarka, filtry (Dla mnie / Wszystko, rodzaj, kraj), sortowanie po dacie albo dopasowaniu, odświeżanie przeciągnięciem.
+- **Nowe jak nieprzeczytane maile**: świeżo znalezione eventy i kawałki mają kropkę, pogrubiony tytuł i pigułkę NOWE, a eventy ze świeżą zmianą pigułkę ZMIANA z treścią zmiany. Otwarcie eventu (albo rozwinięcie kawałka, albo link do Spotify/YouTube) oznacza go jako przejrzany. Zakładki Radar, Muzyka i Japonia mają licznik nowości; nad listą jest „Tylko nowe” i „Oznacz wszystko jako przejrzane”. Po pierwszym uruchomieniu za nowe uchodzi tylko to, co skan znalazł w ostatnich 3 dniach. Przejrzane synchronizują się przez gista razem z planami (u znajomych zostają na telefonie).
 - **Szczegóły eventu**: „Kto to?” z krótkim opisem, skąd znasz artystę, i „Mogą zagrać”: setlista z ostatnich koncertów (a bez niej największe hity), każdy kawałek otwiera Spotify. Na trasie stukasz miasto, na które jedziesz, i ten termin liczy się wszędzie (karty, kalendarz, powiadomienia); wybór synchronizuje się jak plany.
 - **Japonia**: osobna zakładka z eventami w Japonii (lajwy VTuberek, Vocaloid, J-core, MOGRA), żeby nie mieszały się z Europą. Ma własny przełącznik powiadomień.
-- **Nowa muzyka**: codziennie świeże kawałki Twoich artystów plus kilka propozycji spoza listy, z opisem twórcy i piosenki, linkami do Spotify i YouTube. Powiadomienia idą osobnym, cichym kanałem.
+- **Nowa muzyka**: codziennie świeże kawałki Twoich artystów plus kilka propozycji spoza listy, jako zwarta lista: tytuł, artysta, przyciski Spotify i YouTube w wierszu, a opis twórcy i piosenki po kliknięciu. Powiadomienia idą osobnym, cichym kanałem.
 - **Odśwież wszystko**: przycisk na Radarze, w Muzyce i w Japonii (albo przeciągnięcie w dół) od razu pobiera feed eventów i muzyki, VocaDB i dodatkowe źródła, synchronizuje plany i sprawdza powiadomienia. Samo szukanie w internecie robi skan w chmurze raz dziennie.
 - **Kalendarz**: każdy przystanek trasy osobno, pogrupowany miesiącami, z filtrem „tylko mój kraj”.
 - **Plany**: przy każdym evencie „Idę / Może / Zainteresowany / Nie idę” plus gwiazdka. Zakładka „Plany” zbiera to w jednym miejscu; „Nie idę” jest przygaszone (albo schowane z „Dla mnie”, jeśli tak ustawisz).

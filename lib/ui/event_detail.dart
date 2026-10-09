@@ -36,6 +36,8 @@ class EventDetailPage extends StatelessWidget {
     final s = AppScope.of(context);
     // Bierzemy świeżą wersję eventu, żeby wybór miasta od razu było widać.
     final event = s.events.where((x) => x.id == this.event.id).firstOrNull ?? this.event;
+    // Otwarcie eventu = przeczytany (po klatce, bo zmienia stan, który właśnie rysujemy).
+    if (s.isUnread(event)) WidgetsBinding.instance.addPostFrameCallback((_) => s.markRead(event));
     final theme = Theme.of(context);
     final fav = s.favourites.contains(event.id);
     final matched = s.matchedArtists(event);
