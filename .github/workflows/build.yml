@@ -1,0 +1,97 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test test/
+
+  android:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build apk --release --flavor full
+      - run: mv build/app/outputs/flutter-apk/app-full-release.apk WeebRadar-android.apk
+      # Wydanie dla znajomych: neutralne, tylko do czytania (lib/edition.dart).
+      - run: flutter build apk --release --flavor friends --dart-define=EDITION=friends
+      - run: mv build/app/outputs/flutter-apk/app-friends-release.apk RadarKoncertow-android.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WeebRadar-android
+          path: WeebRadar-android.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RadarKoncertow-android
+          path: RadarKoncertow-android.apk
+
+  windows:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build windows --release
+      - name: Spakuj do zip
+        shell: pwsh
+        run: 7z a -tzip -mm=Deflate WeebRadar-windows.zip ./build/windows/x64/runner/Release/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WeebRadar-windows
+          path: WeebRadar-windows.zip
+      - run: flutter build windows --release --dart-define=EDITION=friends
+      - name: Spakuj wersję dla znajomych do zip
+        shell: pwsh
+        run: |
+          Rename-Item build/windows/x64/runner/Release/weeb_radar.exe RadarKoncertow.exe
+          7z a -tzip -mm=Deflate RadarKoncertow-windows.zip ./build/windows/x64/runner/Release/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RadarKoncertow-windows
+          path: RadarKoncertow-windows.zip
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [android, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            WeebRadar-android.apk
+            WeebRadar-windows.zip
+            RadarKoncertow-android.apk
+            RadarKoncertow-windows.zip
