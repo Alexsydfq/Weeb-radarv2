@@ -1,0 +1,39 @@
+name: Web (iPad)
+
+# Wersja przeglądarkowa na GitHub Pages: https://alexsydfq.github.io/Weeb-radarv2/
+# Na iPadzie: Safari → Udostępnij → Do ekranu początkowego.
+on:
+  push:
+    branches: [main, app/weeb-radar-flutter, web/ipad]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      # CanvasKit leży obok apki, a nie na gstatic.com: mniej zależności od cudzych serwerów.
+      - run: flutter build web --release --no-web-resources-cdn --base-href /Weeb-radarv2/
+      - run: touch build/web/.nojekyll
+      - name: Opublikuj na gałąź gh-pages
+        if: github.event_name != 'pull_request'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: build/web
+          publish_branch: gh-pages
+          force_orphan: true
+          commit_message: 'Web: ${{ github.sha }}'

@@ -8,6 +8,7 @@ import '../background/notifications.dart';
 import '../data/app_state.dart';
 import '../data/defaults.dart';
 import '../edition.dart';
+import '../platform/bg_store.dart';
 import 'app_scope.dart';
 import 'theme.dart';
 import 'util.dart';
@@ -44,12 +45,14 @@ class SettingsPage extends StatelessWidget {
                           alignment: Alignment.center,
                           child: const Text('Animowany gradient (brak własnego tła)'),
                         )
-                      : Image.file(File(s.backgroundPath!), fit: BoxFit.cover, gaplessPlayback: true),
+                      : Image(image: backgroundImage(s.backgroundPath!), fit: BoxFit.cover, gaplessPlayback: true),
                 ),
               ),
               const SizedBox(height: 12),
               Text(
-                'PNG, JPG, GIF (animowany!), WebP i BMP. Plik kopiuję do folderu aplikacji.',
+                kIsWeb
+                    ? 'PNG, JPG, GIF (animowany!), WebP i BMP. Obrazek zostaje w tej przeglądarce.'
+                    : 'PNG, JPG, GIF (animowany!), WebP i BMP. Plik kopiuję do folderu aplikacji.',
                 style: theme.textTheme.bodySmall,
               ),
               const SizedBox(height: 10),
@@ -196,8 +199,11 @@ class SettingsPage extends StatelessWidget {
             ],
           ),
         ),
-        const SectionTitle('Powiadomienia'),
-        const _NotifyCard(),
+        // W przeglądarce (iPad) nie ma sprawdzania w tle, więc bez tej sekcji.
+        if (!kIsWeb) ...[
+          const SectionTitle('Powiadomienia'),
+          const _NotifyCard(),
+        ],
         // Wydanie dla znajomych nie ma synchronizacji przez GitHub.
         if (friendsEdition) ...[
           const SectionTitle('Plany'),
