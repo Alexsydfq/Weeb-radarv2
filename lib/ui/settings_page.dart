@@ -276,8 +276,8 @@ class _NotifyCardState extends State<_NotifyCard> {
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               secondary: const Text('🇯🇵', style: TextStyle(fontSize: 22)),
-              title: const Text('Też Japonia'),
-              subtitle: Text('Nowości z zakładki Japonia, według tych samych zasad.', style: small),
+              title: const Text('Też Japonia i Korea'),
+              subtitle: Text('Nowości z zakładki Japonia i Korea, według tych samych zasad.', style: small),
               value: s.notifyJapan,
               onChanged: (v) => s.setNotify(japan: v),
             ),

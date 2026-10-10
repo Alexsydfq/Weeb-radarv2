@@ -35,7 +35,7 @@ class _ShellState extends State<Shell> {
   static const _all = [
     _Dest('Radar', Icons.radar_outlined, Icons.radar, RadarPage()),
     _Dest('Muzyka', Icons.library_music_outlined, Icons.library_music, MusicPage()),
-    _Dest('Japonia', Icons.temple_buddhist_outlined, Icons.temple_buddhist, JapanPage()),
+    _Dest('Azja', Icons.temple_buddhist_outlined, Icons.temple_buddhist, JapanPage()),
     _Dest('Plany', Icons.event_available_outlined, Icons.event_available_rounded, FavoritesPage()),
     _Dest('Kalendarz', Icons.calendar_month_outlined, Icons.calendar_month, CalendarPage()),
     _Dest('Artyści', Icons.headphones_outlined, Icons.headphones, ArtistsPage()),
@@ -78,7 +78,7 @@ class _ShellState extends State<Shell> {
   int _unread(AppState s, String label) => switch (label) {
     'Radar' => s.unreadCount(s.upcomingEurope.where(s.isForYou)),
     'Muzyka' => s.unreadSongs,
-    'Japonia' => s.unreadCount(s.upcomingJapan),
+    'Azja' => s.unreadCount(s.upcomingJapan),
     _ => 0,
   };
 

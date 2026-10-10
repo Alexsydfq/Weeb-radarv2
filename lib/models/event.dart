@@ -1,3 +1,6 @@
+/// Kraje zakładki „Japonia i Korea” (pole region albo wszystkie przystanki).
+const asiaCodes = <String>{'JP', 'KR'};
+
 /// Jeden przystanek trasy (albo jedyny termin koncertu).
 class EventStop {
   final String cc;
@@ -77,7 +80,7 @@ class RadarEvent {
   /// Przystanek trasy, który sam wybrałeś („jadę tutaj”).
   final EventStop? chosen;
 
-  /// Region z feedu: "JP" dla wydarzeń w Japonii (osobna zakładka), inaczej Europa.
+  /// Region z feedu: "JP" (Japonia) albo "KR" (Korea Płd.) trafia do osobnej zakładki, inaczej Europa.
   final String? region;
 
   const RadarEvent({
@@ -106,9 +109,10 @@ class RadarEvent {
     this.region,
   });
 
-  /// Wydarzenie w Japonii: do śledzenia, nie do Radaru Europy.
+  /// Wydarzenie w Japonii albo Korei: do śledzenia, nie do Radaru Europy.
   bool get isJapan =>
-      region?.toUpperCase() == 'JP' || (stops.isNotEmpty && stops.every((s) => s.cc.toUpperCase() == 'JP'));
+      asiaCodes.contains(region?.toUpperCase()) ||
+      (stops.isNotEmpty && stops.every((s) => asiaCodes.contains(s.cc.toUpperCase())));
 
   /// Ten sam event z wybranym przystankiem (albo bez wyboru).
   RadarEvent withChosen(EventStop? stop) => RadarEvent(

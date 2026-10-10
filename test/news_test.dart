@@ -74,6 +74,15 @@ void main() {
     expect(jp.isJapan, isTrue);
     expect(ev('x', 'DECO*27').isJapan, isFalse);
     expect(RadarEvent.fromJson({'id': 'r', 'artist': 'a', 'region': 'JP', 'dateStart': '2030-01-01'}).isJapan, isTrue);
+    // Korea trafia do tej samej zakładki (region albo same przystanki w KR).
+    expect(RadarEvent.fromJson({'id': 'k', 'artist': 'TAK', 'region': 'KR', 'dateStart': '2030-01-01'}).isJapan, isTrue);
+    expect(
+      RadarEvent.fromJson({
+        'id': 'k2', 'artist': 'TAK', 'dateStart': '2030-01-01',
+        'stops': [{'date': '2030-01-01', 'city': 'Seul', 'cc': 'KR'}],
+      }).isJapan,
+      isTrue,
+    );
     s.setNotify(japan: false);
     expect(await collectNews(s, [jp]), isEmpty);
     s.setNotify(japan: true);

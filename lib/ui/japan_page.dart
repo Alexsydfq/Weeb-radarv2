@@ -11,7 +11,7 @@ import 'widgets/unread.dart';
 
 enum _Scope { spotify, forYou, all }
 
-/// Japonia osobno: koncerty, fesy i lajwy VTuberów, na które warto kiedyś polecieć.
+/// Japonia i Korea osobno: koncerty, fesy i lajwy VTuberów, na które warto kiedyś polecieć.
 /// Nie miesza się z Radarem Europy.
 class JapanPage extends StatefulWidget {
   const JapanPage({super.key});
@@ -65,10 +65,10 @@ class _JapanPageState extends State<JapanPage> {
             padding: const EdgeInsets.only(left: 4),
             child: Row(
               children: [
-                const Text('🇯🇵', style: TextStyle(fontSize: 30)),
+                const Text('🇯🇵🇰🇷', style: TextStyle(fontSize: 26)),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text('Japonia', style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w900)),
+                  child: Text('Japonia i Korea', style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w900)),
                 ),
                 RefreshButton(loading: s.loading),
               ],
@@ -77,7 +77,7 @@ class _JapanPageState extends State<JapanPage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 4, 4, 12),
             child: Text(
-              'Lajwy, fesy i koncerty VTuberów oraz vocaloidu w Japonii. Do śledzenia i planowania wyjazdu, '
+              'Lajwy, fesy i koncerty VTuberów oraz vocaloidu w Japonii i Korei. Do śledzenia i planowania wyjazdu, '
               'osobno od Europy.',
               style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
@@ -133,8 +133,8 @@ class _JapanPageState extends State<JapanPage> {
                   Text(
                     all.isEmpty
                         ? byEdition(
-                            'Jeszcze nic z Japonii. Skan dorzuca je dwa razy w tygodniu, więc cierpliwości, baka.',
-                            'Jeszcze nic z Japonii. Nowe wydarzenia pojawiają się tu kilka razy w tygodniu.',
+                            'Jeszcze nic z Japonii ani Korei. Skan dorzuca je dwa razy w tygodniu, więc cierpliwości, baka.',
+                            'Jeszcze nic z Japonii ani Korei. Nowe wydarzenia pojawiają się tu kilka razy w tygodniu.',
                           )
                         : _onlyNew
                         ? 'Nic nowego z tym filtrem.'

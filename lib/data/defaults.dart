@@ -472,6 +472,7 @@ const countryNames = <String, String>{
   'LV': 'Łotwa',
   'EE': 'Estonia',
   'JP': 'Japonia',
+  'KR': 'Korea Płd.',
   'US': 'USA',
 };
 
