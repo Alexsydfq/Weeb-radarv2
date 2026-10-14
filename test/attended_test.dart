@@ -174,4 +174,66 @@ void main() {
     await t.pump();
     expect(s.wasAt('past-babymetal'), isTrue);
   });
+
+  test('festiwal: line-up i „kogo widziałem” przechodzą przez plik gista', () {
+    final fest = RadarEvent.fromJson({
+      'id': 'past-pohoda-2025',
+      'artist': 'Pohoda 2025',
+      'kind': 'festiwal',
+      'dateStart': '2025-07-10',
+      'lineup': ['Gorillaz', 'Moderat', 'Kneecap'],
+      'stops': [
+        {'date': '2025-07-10', 'city': 'Trenczyn', 'cc': 'SK'},
+      ],
+    });
+    final a = Attended.fromEvent(fest, at: 1).copyWith(seen: ['Gorillaz', 'Ktoś z namiotu'], at: 2);
+    final back = decodeAttended(encodeEntries({}, attended: {a.id: a}))[a.id]!;
+    expect(back.lineup, ['Gorillaz', 'Moderat', 'Kneecap']);
+    expect(back.seen, ['Gorillaz', 'Ktoś z namiotu']);
+  });
+
+  testWidgets('festiwal z listy: filtr „Festiwale”, potem odhaczanie, kogo widziałem', (t) async {
+    await initializeDateFormatting('pl');
+    SharedPreferences.setMockInitialValues({});
+    final s = AppState(await SharedPreferences.getInstance())..loadSettings();
+    s.archive = [
+      tour(),
+      RadarEvent.fromJson({
+        'id': 'past-pohoda-2025',
+        'artist': 'Pohoda 2025',
+        'kind': 'festiwal',
+        'dateStart': '2025-07-10',
+        'lineup': ['Moderat', 'Kneecap'],
+        'stops': [
+          {'date': '2025-07-10', 'city': 'Trenczyn', 'cc': 'SK'},
+        ],
+      }),
+    ];
+    await t.pumpWidget(
+      AppScope(
+        notifier: s,
+        child: const MaterialApp(home: Scaffold(body: SizedBox())),
+      ),
+    );
+    final nav = t.state<NavigatorState>(find.byType(Navigator));
+    nav.push(PastEventPicker.route(group: 'festiwal'));
+    await t.pump();
+    await t.pump(const Duration(seconds: 1));
+    expect(find.text('Pohoda 2025'), findsOneWidget);
+    expect(find.text('NieR:Orchestra Concert'), findsNothing);
+    await t.tap(find.text('Pohoda 2025'));
+    await t.pump();
+    await t.pump(const Duration(seconds: 1));
+    expect(s.wasAt('past-pohoda-2025'), isTrue);
+    expect(find.text('Byłem na…'), findsNothing);
+    await t.scrollUntilVisible(find.text('Kneecap'), 200, scrollable: find.byType(Scrollable).first);
+    await t.tap(find.text('Kneecap'));
+    await t.pump();
+    await t.enterText(find.widgetWithText(TextField, 'Dopisz artystę spoza listy'), 'DJ z namiotu');
+    await t.testTextInput.receiveAction(TextInputAction.done);
+    await t.pump();
+    await t.tap(find.text('Zapisz'), warnIfMissed: false);
+    await t.pump(const Duration(seconds: 1));
+    expect(s.attendedAll['ev-past-pohoda-2025']!.seen, ['Kneecap', 'DJ z namiotu']);
+  });
 }

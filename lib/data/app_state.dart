@@ -708,7 +708,7 @@ class AppState extends ChangeNotifier {
     final old = attendedAll[id];
     final fresh = Attended.fromEvent(e, at: _nextAt(old));
     // Przywrócony wpis zachowuje wcześniejszą ocenę i notatkę.
-    attendedAll[id] = old == null ? fresh : fresh.copyWith(note: old.note, rating: old.rating, at: fresh.at);
+    attendedAll[id] = old == null ? fresh : fresh.copyWith(note: old.note, rating: old.rating, seen: old.seen, at: fresh.at);
     _saveAttended();
   }
 

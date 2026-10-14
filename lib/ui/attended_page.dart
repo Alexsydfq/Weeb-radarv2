@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/app_state.dart';
 import '../data/defaults.dart';
 import '../edition.dart';
 import '../models/attended.dart';
@@ -9,15 +10,73 @@ import 'background.dart';
 import 'util.dart';
 import 'widgets/glass.dart';
 
-/// Historia „Byłem”: koncerty, na których już byłeś, pogrupowane po latach.
-class AttendedHistory extends StatelessWidget {
+/// Grupa w „Byłem”: festiwale i konwenty osobno, reszta (koncerty, trasy,
+/// symfoniczne, rave'y) jako koncerty.
+String attendedGroup(String kind) => kind == 'festiwal' || kind == 'konwent' ? kind : 'koncert';
+
+const attendedGroups = {'koncert': 'Koncerty', 'festiwal': 'Festiwale', 'konwent': 'Konwenty'};
+
+/// Filtr grup: „Wszystko” + koncerty / festiwale / konwenty z licznikami.
+class _GroupChips extends StatelessWidget {
+  const _GroupChips({required this.counts, required this.selected, required this.onChanged});
+
+  final Map<String, int> counts;
+  final String? selected;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = counts.values.fold(0, (a, b) => a + b);
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        ChoiceChip(label: Text('Wszystko ($total)'), selected: selected == null, onSelected: (_) => onChanged(null)),
+        for (final g in attendedGroups.entries)
+          ChoiceChip(
+            avatar: Icon(kindIcon(g.key), size: 18, color: kindColor(g.key)),
+            label: Text('${g.value} (${counts[g.key] ?? 0})'),
+            selected: selected == g.key,
+            onSelected: (_) => onChanged(selected == g.key ? null : g.key),
+          ),
+      ],
+    );
+  }
+}
+
+/// Linijka „ze Spotify: …” dla festiwalu/konwentu: Twoi artyści z line-upu,
+/// najwyżej w Twoim topie najpierw (null, gdy nikogo).
+String? spotifyInLineup(AppState s, List<String> lineup) {
+  final mine = [
+    for (final n in lineup)
+      if (s.artistsIn(n).isNotEmpty) (name: n, rank: s.rankOfEntry(n)),
+  ]..sort((a, b) => (a.rank ?? 9999).compareTo(b.rank ?? 9999));
+  if (mine.isEmpty) return null;
+  final names = mine.take(6).map((m) => m.name).join(', ');
+  return '🎧 ${mine.length} ${byEdition('z Twojego Spotify', 'z Twojej listy')}: $names${mine.length > 6 ? '…' : ''}';
+}
+
+/// Historia „Byłem”: koncerty, festiwale i konwenty, na których już byłeś, pogrupowane po latach.
+class AttendedHistory extends StatefulWidget {
   const AttendedHistory({super.key});
+
+  @override
+  State<AttendedHistory> createState() => _AttendedHistoryState();
+}
+
+class _AttendedHistoryState extends State<AttendedHistory> {
+  String? _group;
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final theme = Theme.of(context);
-    final list = s.attended;
+    final everything = s.attended;
+    final counts = <String, int>{};
+    for (final a in everything) {
+      counts[attendedGroup(a.kind)] = (counts[attendedGroup(a.kind)] ?? 0) + 1;
+    }
+    final list = _group == null ? everything : everything.where((a) => attendedGroup(a.kind) == _group).toList();
     final thisYear = list.where((a) => a.date.year == todayDate().year).length;
     final byArtist = <String, int>{};
     for (final a in list) {
@@ -39,9 +98,11 @@ class AttendedHistory extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                list.isEmpty
+                list.isEmpty && everything.isNotEmpty
+                    ? 'Tu jeszcze nic.'
+                    : list.isEmpty
                     ? byEdition('Jeszcze nic. Gdzieś przecież byłeś, baka!', 'Jeszcze nic nie zapisano.')
-                    : '${byEdition('Byłeś na', 'Zaliczone:')} ${list.length} ${_plural(list.length)}'
+                    : '${byEdition('Byłeś na', 'Zaliczone:')} ${list.length} ${_plural(list.length, _group)}'
                           '${thisYear > 0 ? ', w tym roku: $thisYear' : ''}'
                           '${countries.length > 1 ? ' · ${countries.length} krajów' : ''}',
                 style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
@@ -68,6 +129,11 @@ class AttendedHistory extends StatelessWidget {
                     icon: const Icon(Icons.search_rounded),
                     label: const Text('Wybierz z listy koncertów'),
                   ),
+                  FilledButton.tonalIcon(
+                    onPressed: () => Navigator.push(context, PastEventPicker.route(group: 'festiwal')),
+                    icon: Icon(kindIcon('festiwal')),
+                    label: const Text('Wybierz festiwal'),
+                  ),
                   OutlinedButton.icon(
                     onPressed: () => Navigator.push(context, AttendedEditPage.route()),
                     icon: const Icon(Icons.edit_rounded),
@@ -75,6 +141,10 @@ class AttendedHistory extends StatelessWidget {
                   ),
                 ],
               ),
+              if (everything.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _GroupChips(counts: counts, selected: _group, onChanged: (g) => setState(() => _group = g)),
+              ],
             ],
           ),
         ),
@@ -89,7 +159,11 @@ class AttendedHistory extends StatelessWidget {
     );
   }
 
-  static String _plural(int n) => byEdition(n == 1 ? 'koncercie' : 'koncertach', n == 1 ? 'koncert' : 'koncerty/ów');
+  static String _plural(int n, String? group) => switch (group) {
+    'festiwal' => byEdition(n == 1 ? 'festiwalu' : 'festiwalach', n == 1 ? 'festiwal' : 'festiwale/i'),
+    'konwent' => byEdition(n == 1 ? 'konwencie' : 'konwentach', n == 1 ? 'konwent' : 'konwenty/ów'),
+    _ => byEdition(n == 1 ? 'koncercie' : 'koncertach', n == 1 ? 'koncert' : 'koncerty/ów'),
+  };
 }
 
 class AttendedTile extends StatelessWidget {
@@ -121,6 +195,9 @@ class AttendedTile extends StatelessWidget {
               formatLong(a.date),
               if (place.isNotEmpty) place,
               if (a.title.isNotEmpty && a.title != a.artist) a.title,
+              if (a.seen.isNotEmpty)
+                '${byEdition('Widziałeś', 'Widziane')}: ${a.seen.take(5).join(', ')}'
+                    '${a.seen.length > 5 ? ' (+${a.seen.length - 5})' : ''}',
               if (a.note.isNotEmpty) '„${a.note}”',
             ].join('\n'),
           ),
@@ -159,10 +236,15 @@ class _AttendedEditPageState extends State<AttendedEditPage> {
   late String _cc = widget.existing?.cc ?? 'PL';
   late DateTime _date = widget.existing?.date ?? todayDate().subtract(const Duration(days: 1));
   late int _rating = widget.existing?.rating ?? 0;
+  late final List<String> _lineup = widget.existing?.lineup ?? const [];
+  late final Set<String> _seen = {...?widget.existing?.seen};
+  final _addSeen = TextEditingController();
+  final _lineupFilter = TextEditingController();
+  bool _allLineup = false;
 
   @override
   void dispose() {
-    for (final c in [_artist, _title, _city, _venue, _note]) {
+    for (final c in [_artist, _title, _city, _venue, _note, _addSeen, _lineupFilter]) {
       c.dispose();
     }
     super.dispose();
@@ -193,6 +275,8 @@ class _AttendedEditPageState extends State<AttendedEditPage> {
       note: _note.text.trim(),
       rating: _rating,
       eventId: old?.eventId,
+      lineup: _lineup,
+      seen: [..._lineup.where(_seen.contains), ..._seen.where((n) => !_lineup.contains(n))],
       at: old?.at ?? 0,
     );
     AppScope.read(context).saveAttended(a);
@@ -214,6 +298,118 @@ class _AttendedEditPageState extends State<AttendedEditPage> {
     if (ok != true || !mounted) return;
     AppScope.read(context).removeAttended(widget.existing!.id);
     Navigator.pop(context);
+  }
+
+  void _addManualSeen() {
+    final n = _addSeen.text.trim();
+    if (n.isEmpty) return;
+    setState(() {
+      _seen.add(n);
+      _addSeen.clear();
+    });
+  }
+
+  /// „Kogo widziałeś”: line-up do odhaczenia (Twoi ze Spotify na górze) + dopisywanie ręczne.
+  Widget _seenSection(BuildContext context) {
+    final s = AppScope.of(context);
+    final theme = Theme.of(context);
+    const collapsed = 40;
+    final q = _lineupFilter.text.trim().toLowerCase();
+    final entries =
+        [
+          for (final (i, name) in _lineup.indexed)
+            (name: name, mine: s.artistsIn(name).isNotEmpty, rank: s.rankOfEntry(name), order: i),
+        ]..sort((a, b) {
+          if (a.mine != b.mine) return a.mine ? -1 : 1;
+          if (a.mine) return (a.rank ?? 9999).compareTo(b.rank ?? 9999);
+          return a.order.compareTo(b.order);
+        });
+    final filtered = q.isEmpty ? entries : entries.where((e) => e.name.toLowerCase().contains(q)).toList();
+    final shown = _allLineup || q.isNotEmpty ? filtered : filtered.take(collapsed).toList();
+    final mine = entries.where((e) => e.mine).length;
+    final manual = _seen.where((n) => !_lineup.contains(n)).toList();
+    return Glass(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${byEdition('Kogo widziałeś', 'Kogo widziane')} (${_seen.length})',
+            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _lineup.isEmpty
+                ? 'Brak line-upu w archiwum. Dopisz artystów ręcznie.'
+                : mine > 0
+                ? '${byEdition('Na zielono ci z Twojego Spotify', 'Na zielono ci z Twojej listy artystów')} ($mine). Kliknij, kogo ${byEdition('widziałeś', 'widziano')}.'
+                : 'Kliknij, kogo ${byEdition('widziałeś', 'widziano')}.',
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          if (_lineup.length > collapsed) ...[
+            const SizedBox(height: 8),
+            TextField(
+              controller: _lineupFilter,
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.search_rounded),
+                hintText: 'Szukaj w line-upie',
+                isDense: true,
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+          ],
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final e in shown)
+                FilterChip(
+                  avatar: e.mine && !_seen.contains(e.name)
+                      ? const Icon(Icons.headphones_rounded, size: 16, color: spotifyGreen)
+                      : null,
+                  label: Text(e.rank != null ? '${e.name}  #${e.rank}' : e.name),
+                  labelStyle: e.mine ? const TextStyle(color: spotifyGreen, fontWeight: FontWeight.w700) : null,
+                  side: e.mine ? const BorderSide(color: spotifyGreen) : null,
+                  selected: _seen.contains(e.name),
+                  selectedColor: attendedColor.withValues(alpha: 0.3),
+                  onSelected: (on) => setState(() => on ? _seen.add(e.name) : _seen.remove(e.name)),
+                ),
+              for (final n in manual)
+                InputChip(
+                  label: Text(n),
+                  selected: true,
+                  selectedColor: attendedColor.withValues(alpha: 0.3),
+                  onDeleted: () => setState(() => _seen.remove(n)),
+                ),
+            ],
+          ),
+          if (filtered.length > collapsed && q.isEmpty)
+            TextButton(
+              onPressed: () => setState(() => _allLineup = !_allLineup),
+              child: Text(_allLineup ? 'Zwiń' : 'Pokaż cały line-up (${entries.length})'),
+            ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _addSeen,
+                  decoration: const InputDecoration(
+                    hintText: 'Dopisz artystę spoza listy',
+                    isDense: true,
+                    border: OutlineInputBorder(),
+                  ),
+                  onSubmitted: (_) => _addManualSeen(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filledTonal(tooltip: 'Dodaj', onPressed: _addManualSeen, icon: const Icon(Icons.add_rounded)),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -301,6 +497,10 @@ class _AttendedEditPageState extends State<AttendedEditPage> {
                       ],
                     ),
                   ),
+                  if (_lineup.isNotEmpty || _seen.isNotEmpty || _kind == 'festiwal' || _kind == 'konwent') ...[
+                    const SizedBox(height: 12),
+                    _seenSection(context),
+                  ],
                   const SizedBox(height: 12),
                   Glass(
                     child: Column(
@@ -343,9 +543,12 @@ class _AttendedEditPageState extends State<AttendedEditPage> {
 
 /// Wybór „Byłem” z listy minionych eventów (feed + archiwum), z wyszukiwarką.
 class PastEventPicker extends StatefulWidget {
-  const PastEventPicker({super.key});
+  const PastEventPicker({super.key, this.group});
 
-  static Route<void> route() => MaterialPageRoute(builder: (_) => const PastEventPicker());
+  /// Startowy filtr: 'festiwal', 'konwent', 'koncert' albo null (wszystko).
+  final String? group;
+
+  static Route<void> route({String? group}) => MaterialPageRoute(builder: (_) => PastEventPicker(group: group));
 
   @override
   State<PastEventPicker> createState() => _PastEventPickerState();
@@ -353,6 +556,7 @@ class PastEventPicker extends StatefulWidget {
 
 class _PastEventPickerState extends State<PastEventPicker> {
   String _q = '';
+  late String? _group = widget.group;
 
   @override
   void initState() {
@@ -410,6 +614,12 @@ class _PastEventPickerState extends State<PastEventPicker> {
     }
     if (!s.wasAt(e.id)) s.toggleAttended(chosen);
     if (!mounted) return;
+    final saved = s.attendedAll['ev-${e.id}'];
+    if (e.lineup.isNotEmpty && saved != null) {
+      // Festiwal/konwent: od razu do odhaczania, kogo widziałeś.
+      Navigator.pushReplacement(context, AttendedEditPage.route(existing: saved));
+      return;
+    }
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Zapisane w historii: ${e.artist}')));
   }
@@ -418,7 +628,12 @@ class _PastEventPickerState extends State<PastEventPicker> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final theme = Theme.of(context);
-    final list = s.pastEvents.where(_matches).toList();
+    final matching = s.pastEvents.where(_matches).toList();
+    final counts = <String, int>{};
+    for (final e in matching) {
+      counts[attendedGroup(e.kind)] = (counts[attendedGroup(e.kind)] ?? 0) + 1;
+    }
+    final list = _group == null ? matching : matching.where((e) => attendedGroup(e.kind) == _group).toList();
     return AppBackground(
       child: Scaffold(
         appBar: AppBar(title: Text(byEdition('Na czym byłem?', 'Wybierz koncert'))),
@@ -437,6 +652,13 @@ class _PastEventPickerState extends State<PastEventPicker> {
                       border: OutlineInputBorder(),
                     ),
                     onChanged: (v) => setState(() => _q = v.trim()),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: _GroupChips(counts: counts, selected: _group, onChanged: (g) => setState(() => _group = g)),
                   ),
                 ),
                 if (s.archiveLoading) const LinearProgressIndicator(),
@@ -469,12 +691,22 @@ class _PastEventPickerState extends State<PastEventPicker> {
                                 child: Icon(kindIcon(e.kind), color: kindColor(e.kind)),
                               ),
                               title: Text(e.artist, style: const TextStyle(fontWeight: FontWeight.w800)),
-                              subtitle: Text(
-                                [
-                                  formatRange(e),
-                                  e.stops.map((x) => '${flagOf(x.cc)} ${x.city}').toSet().take(4).join(', '),
-                                  if (e.title.isNotEmpty && e.title != e.artist) e.title,
-                                ].where((x) => x.trim().isNotEmpty).join('\n'),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    [
+                                      formatRange(e),
+                                      e.stops.map((x) => '${flagOf(x.cc)} ${x.city}').toSet().take(4).join(', '),
+                                      if (e.title.isNotEmpty && e.title != e.artist) e.title,
+                                    ].where((x) => x.trim().isNotEmpty).join('\n'),
+                                  ),
+                                  if (spotifyInLineup(s, e.lineup) case final mine?)
+                                    Text(
+                                      mine,
+                                      style: const TextStyle(color: spotifyGreen, fontWeight: FontWeight.w700),
+                                    ),
+                                ],
                               ),
                               trailing: s.wasAt(e.id) ? const Icon(Icons.verified_rounded, color: attendedColor) : null,
                               onTap: s.wasAt(e.id) ? null : () => _pick(e),
