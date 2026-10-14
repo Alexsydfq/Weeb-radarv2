@@ -38,6 +38,9 @@ String countryName(String cc) => countryNames[cc.toUpperCase()] ?? cc;
 /// Kolor historii „Byłem”.
 const attendedColor = Color(0xFF4DD0B5);
 
+/// Czas trwania koncertu / godziny setów.
+const durationColor = Color(0xFF8EC5FF);
+
 IconData kindIcon(String kind) => switch (kind) {
       'trasa' => Icons.route_rounded,
       'koncert' => Icons.mic_external_on_rounded,

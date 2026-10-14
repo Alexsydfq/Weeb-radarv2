@@ -80,6 +80,12 @@ class RadarEvent {
   /// Przystanek trasy, który sam wybrałeś („jadę tutaj”).
   final EventStop? chosen;
 
+  /// Ile trwa koncert/set, gdy organizator to ogłosił, np. „ok. 2 h” albo „20:00–22:30”.
+  final String? duration;
+
+  /// Godziny setów z timetable'u: artysta z line-upu → np. „sob. 21:00–22:00”.
+  final Map<String, String> setTimes;
+
   /// Region z feedu: "JP" (Japonia) albo "KR" (Korea Płd.) trafia do osobnej zakładki, inaczej Europa.
   final String? region;
 
@@ -107,6 +113,8 @@ class RadarEvent {
     this.setlistFrom,
     this.chosen,
     this.region,
+    this.duration,
+    this.setTimes = const {},
   });
 
   /// Wydarzenie w Japonii albo Korei: do śledzenia, nie do Radaru Europy.
@@ -139,6 +147,8 @@ class RadarEvent {
     setlistFrom: setlistFrom,
     chosen: stop,
     region: region,
+    duration: duration,
+    setTimes: setTimes,
   );
 
   factory RadarEvent.fromJson(Map<String, dynamic> j, {EventOrigin origin = EventOrigin.feed}) {
@@ -177,6 +187,12 @@ class RadarEvent {
       setlist: _strings(j['setlist']),
       setlistFrom: _nonEmpty(j['setlistFrom']),
       region: _nonEmpty(j['region']),
+      duration: _nonEmpty(j['duration']),
+      setTimes: {
+        if (j['setTimes'] is Map)
+          for (final e in (j['setTimes'] as Map).entries)
+            if (_nonEmpty(e.key) != null && _nonEmpty(e.value) != null) _nonEmpty(e.key)!: _nonEmpty(e.value)!,
+      },
     );
   }
 
@@ -202,7 +218,18 @@ class RadarEvent {
     if (setlist.isNotEmpty) 'setlist': setlist,
     if (setlistFrom != null) 'setlistFrom': setlistFrom,
     if (region != null) 'region': region,
+    if (duration != null) 'duration': duration,
+    if (setTimes.isNotEmpty) 'setTimes': setTimes,
   };
+
+  /// Godzina setu z timetable'u dla pozycji line-upu (bez wielkości liter).
+  String? setTimeOf(String name) {
+    final n = name.trim().toLowerCase();
+    for (final e in setTimes.entries) {
+      if (e.key.toLowerCase() == n) return e.value;
+    }
+    return null;
+  }
 
   static List<String> _strings(Object? v) =>
       ((v is List) ? v : const []).map((x) => x.toString().trim()).where((x) => x.isNotEmpty).toList();

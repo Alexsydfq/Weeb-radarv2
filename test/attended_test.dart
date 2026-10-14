@@ -236,4 +236,24 @@ void main() {
     await t.pump(const Duration(seconds: 1));
     expect(s.attendedAll['ev-past-pohoda-2025']!.seen, ['Kneecap', 'DJ z namiotu']);
   });
+
+  test('czas trwania i godziny setów z feedu', () {
+    final e = RadarEvent.fromJson({
+      'id': 'pyrkon',
+      'artist': 'Pyrkon 2026',
+      'dateStart': '2026-06-19',
+      'duration': 'ok. 1 h',
+      'lineup': ['ZAQ'],
+      'setTimes': {'ZAQ': 'sob. 21:00–22:00', '': 'x'},
+      'stops': [
+        {'date': '2026-06-19', 'city': 'Poznań', 'cc': 'PL'},
+      ],
+    });
+    expect(e.duration, 'ok. 1 h');
+    expect(e.setTimeOf('zaq'), 'sob. 21:00–22:00');
+    expect(e.setTimes, hasLength(1));
+    final back = RadarEvent.fromJson(e.toJson());
+    expect(back.setTimeOf('ZAQ'), 'sob. 21:00–22:00');
+    expect(back.withChosen(null).duration, 'ok. 1 h');
+  });
 }

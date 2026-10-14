@@ -37,6 +37,7 @@ class EventCard extends StatelessWidget {
       if (unreadChange) const Pill('ZMIANA', color: unreadColor, icon: Icons.update_rounded),
       if (matched.isNotEmpty) Pill(spotifyLabel(rank), color: spotifyGreen, icon: Icons.headphones_rounded),
       if (plan != null) Pill(planLabels[plan]!, color: planColor(plan), icon: planIcon(plan)),
+      if (event.duration != null) Pill(event.duration!, color: durationColor, icon: Icons.timer_outlined),
       if (event.origin == EventOrigin.vocadb) const Pill('VocaDB', color: Color(0xFF39C5BB)),
       if (event.origin == EventOrigin.manual) const Pill('mój', color: Color(0xFFFFD23F)),
     ];

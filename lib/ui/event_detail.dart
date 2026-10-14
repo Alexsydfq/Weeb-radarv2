@@ -227,13 +227,16 @@ class EventDetailPage extends StatelessWidget {
                   ),
                   Glass(child: _Lineup(event: event)),
                 ],
-                if (event.facts.isNotEmpty) ...[
+                if (event.facts.isNotEmpty || event.duration != null) ...[
                   const SectionTitle('Najważniejsze info'),
                   Glass(
                     padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
                     child: Column(
                       children: [
-                        for (final (i, f) in event.facts.indexed) ...[
+                        for (final (i, f) in [
+                          if (event.duration != null) EventFact('⏱ Czas trwania', event.duration!),
+                          ...event.facts,
+                        ].indexed) ...[
                           if (i > 0) const Divider(height: 1),
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -463,6 +466,11 @@ class _LineupState extends State<_Lineup> {
           if (a.mine) return (a.rank ?? 9999).compareTo(b.rank ?? 9999);
           return a.order.compareTo(b.order);
         });
+    String label(({String name, bool mine, int? rank, int order}) e) {
+      final time = widget.event.setTimeOf(e.name);
+      return [e.name, if (e.rank != null) '#${e.rank}', if (time != null) '⏱ $time'].join('  ');
+    }
+
     final mine = entries.where((e) => e.mine).length;
     final shown = _all ? entries : entries.take(_collapsed).toList();
     return Column(
@@ -485,12 +493,8 @@ class _LineupState extends State<_Lineup> {
           children: [
             for (final e in shown)
               e.mine
-                  ? Pill(
-                      e.rank != null ? '${e.name}  #${e.rank}' : e.name,
-                      color: spotifyGreen,
-                      icon: Icons.headphones_rounded,
-                    )
-                  : Pill(e.name, color: theme.colorScheme.onSurfaceVariant),
+                  ? Pill(label(e), color: spotifyGreen, icon: Icons.headphones_rounded)
+                  : Pill(label(e), color: theme.colorScheme.onSurfaceVariant),
           ],
         ),
         if (entries.length > _collapsed)
