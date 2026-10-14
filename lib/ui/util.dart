@@ -35,6 +35,9 @@ String countdown(DateTime d) {
 
 String countryName(String cc) => countryNames[cc.toUpperCase()] ?? cc;
 
+/// Kolor historii „Byłem”.
+const attendedColor = Color(0xFF4DD0B5);
+
 IconData kindIcon(String kind) => switch (kind) {
       'trasa' => Icons.route_rounded,
       'koncert' => Icons.mic_external_on_rounded,
@@ -42,6 +45,7 @@ IconData kindIcon(String kind) => switch (kind) {
       'rave' => Icons.nightlife_rounded,
       'vocaloid' => Icons.graphic_eq_rounded,
       'festiwal' => Icons.celebration_rounded,
+      'symfoniczny' => Icons.piano_rounded,
       _ => Icons.star_rounded,
     };
 
@@ -52,6 +56,7 @@ Color kindColor(String kind) => switch (kind) {
       'rave' => const Color(0xFFB98BFF),
       'vocaloid' => const Color(0xFF39C5BB),
       'festiwal' => const Color(0xFF5BD178),
+      'symfoniczny' => const Color(0xFFE8C468),
       _ => const Color(0xFF9E9E9E),
     };
 

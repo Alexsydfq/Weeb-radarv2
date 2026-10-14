@@ -172,6 +172,16 @@ class EventDetailPage extends StatelessWidget {
                               selectedColor: planColor(p).withValues(alpha: 0.35),
                               onSelected: (_) => s.setPlan(event.id, p),
                             ),
+                          // Po starcie eventu można go odhaczyć do historii „Byłem”.
+                          if (!event.start.isAfter(todayDate()))
+                            ChoiceChip(
+                              avatar: const Icon(Icons.verified_rounded, color: attendedColor, size: 18),
+                              label: Text(byEdition('Byłem', 'Byłem/am')),
+                              showCheckmark: false,
+                              selected: s.wasAt(event.id),
+                              selectedColor: attendedColor.withValues(alpha: 0.35),
+                              onSelected: (_) => s.toggleAttended(event),
+                            ),
                         ],
                       ),
                       const SizedBox(height: 8),

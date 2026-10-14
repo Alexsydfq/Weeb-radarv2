@@ -4,12 +4,21 @@ import '../data/sync_service.dart';
 import '../edition.dart';
 import '../models/event.dart';
 import 'app_scope.dart';
+import 'attended_page.dart';
 import 'util.dart';
 import 'widgets/event_card.dart';
 
 /// Twoje plany: Idę / Może / Zainteresowany / ulubione, a na końcu to, na co nie idziesz.
-class FavoritesPage extends StatelessWidget {
+/// Druga karta to historia „Byłem”.
+class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
+
+  @override
+  State<FavoritesPage> createState() => _FavoritesPageState();
+}
+
+class _FavoritesPageState extends State<FavoritesPage> {
+  bool _history = false;
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +76,23 @@ class FavoritesPage extends StatelessWidget {
               ),
           ]),
         ),
-        if (mine.isEmpty)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: SegmentedButton<bool>(
+            segments: [
+              const ButtonSegment(value: false, icon: Icon(Icons.event_available_rounded), label: Text('Plany')),
+              ButtonSegment(
+                value: true,
+                icon: const Icon(Icons.verified_rounded),
+                label: Text('${byEdition('Byłem', 'Byłem/am')} (${s.attended.length})'),
+              ),
+            ],
+            selected: {_history},
+            onSelectionChanged: (v) => setState(() => _history = v.first),
+          ),
+        ),
+        if (_history) const AttendedHistory(),
+        if (!_history && mine.isEmpty)
           Padding(
             padding: const EdgeInsets.all(32),
             child: Column(children: [
@@ -84,7 +109,7 @@ class FavoritesPage extends StatelessWidget {
             ]),
           ),
         for (final (title, icon, color, list) in sections)
-          if (list.isNotEmpty) ...[
+          if (!_history && list.isNotEmpty) ...[
             Padding(
               padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
               child: Row(children: [
@@ -95,10 +120,10 @@ class FavoritesPage extends StatelessWidget {
             ),
             for (final e in list) EventCard(event: e),
           ],
-        if (past.isNotEmpty) ...[
+        if (!_history && past.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
-            child: Text('Już były', style: theme.textTheme.titleMedium),
+            child: Text('Już były (odhacz „Byłem” w szczegółach)', style: theme.textTheme.titleMedium),
           ),
           for (final e in past) Opacity(opacity: 0.55, child: EventCard(event: e)),
         ],

@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../edition.dart';
+import '../models/attended.dart';
 import '../models/event.dart';
 import '../models/song.dart';
 import 'defaults.dart';
@@ -105,6 +106,16 @@ class AppState extends ChangeNotifier {
   bool vocaDbEuropeOnly = true;
   List<WatchSource> watchSources = [...defaultWatchSources];
   List<RadarEvent> manualEvents = [];
+
+  /// Historia „Byłem” razem z nagrobkami usuniętych wpisów (do synchronizacji).
+  Map<String, Attended> attendedAll = {};
+
+  /// Koncerty, na których byłeś, od najnowszego.
+  List<Attended> get attended =>
+      attendedAll.values.where((a) => !a.deleted).toList()..sort((a, b) => b.date.compareTo(a.date));
+
+  /// Czy event z feedu jest już w historii „Byłem”.
+  bool wasAt(String eventId) => attendedAll['ev-$eventId']?.deleted == false;
 
   // ---------- dane ----------
   List<RadarEvent> _remoteEvents = [];
@@ -248,6 +259,12 @@ class AppState extends ChangeNotifier {
         watchSources = (jsonDecode(ws) as List)
             .map((e) => WatchSource.fromJson((e as Map).cast<String, dynamic>()))
             .toList();
+      } catch (_) {}
+    }
+    final at = p.getString('attended');
+    if (at != null) {
+      try {
+        attendedAll = decodeAttendedList(jsonDecode(at));
       } catch (_) {}
     }
     final me = p.getString('events.manual');
@@ -627,6 +644,45 @@ class AppState extends ChangeNotifier {
   }
 
   // ======================================================================
+  // Historia „Byłem”
+  // ======================================================================
+
+  int _nextAt(Attended? current) {
+    final at = _now();
+    return (current != null && at <= current.at) ? current.at + 1 : at;
+  }
+
+  void _saveAttended() {
+    _prefs.setString('attended', jsonEncode(encodeAttendedList(attendedAll)));
+    notifyListeners();
+    _scheduleSync();
+  }
+
+  /// Dopisuje albo poprawia wpis (z formularza).
+  void saveAttended(Attended a) {
+    attendedAll[a.id] = a.copyWith(deleted: false, at: _nextAt(attendedAll[a.id]));
+    _saveAttended();
+  }
+
+  void removeAttended(String id) {
+    final current = attendedAll[id];
+    if (current == null) return;
+    attendedAll[id] = current.copyWith(deleted: true, at: _nextAt(current));
+    _saveAttended();
+  }
+
+  /// „Byłem” na evencie z feedu; drugie kliknięcie zdejmuje wpis.
+  void toggleAttended(RadarEvent e) {
+    final id = 'ev-${e.id}';
+    if (wasAt(e.id)) return removeAttended(id);
+    final old = attendedAll[id];
+    final fresh = Attended.fromEvent(e, at: _nextAt(old));
+    // Przywrócony wpis zachowuje wcześniejszą ocenę i notatkę.
+    attendedAll[id] = old == null ? fresh : fresh.copyWith(note: old.note, rating: old.rating, at: fresh.at);
+    _saveAttended();
+  }
+
+  // ======================================================================
   // Synchronizacja (prywatny GitHub Gist)
   // ======================================================================
 
@@ -691,9 +747,12 @@ class AppState extends ChangeNotifier {
     syncError = null;
     notifyListeners();
     try {
-      final r = await _sync.sync(syncToken!, syncGistId, entries, notified: notified ?? const {}, read: readIds);
+      final r = await _sync.sync(syncToken!, syncGistId, entries,
+          notified: notified ?? const {}, read: readIds, attended: attendedAll);
       // W trakcie mogły dojść lokalne zmiany: łączymy jeszcze raz.
       entries = mergeEntries(entries, r.entries);
+      attendedAll = mergeAttended(attendedAll, r.attended);
+      _prefs.setString('attended', jsonEncode(encodeAttendedList(attendedAll)));
       if (r.notified.isNotEmpty) await markNotified(r.notified, sync: false);
       _addRead(r.read.toList(), sync: false);
       syncGistId = r.gistId;

@@ -500,6 +500,7 @@ const kindLabels = <String, String>{
   'rave': 'Rave',
   'vocaloid': 'Vocaloid',
   'festiwal': 'Festiwal',
+  'symfoniczny': 'Symfoniczny',
   'inne': 'Inne',
 };
 

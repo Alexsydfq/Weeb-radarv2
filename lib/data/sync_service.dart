@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../models/attended.dart';
+
 /// Czy idziesz na event.
 enum Plan { going, maybe, interested, notGoing }
 
@@ -84,6 +86,16 @@ Map<String, PlanEntry> decodeEntries(String? raw) {
   }
 }
 
+/// Historia „Byłem” z pliku synchronizacji.
+Map<String, Attended> decodeAttended(String? raw) {
+  if (raw == null || raw.isEmpty) return {};
+  try {
+    final j = jsonDecode(raw);
+    if (j is Map) return decodeAttendedList(j['attended']);
+  } catch (_) {}
+  return {};
+}
+
 /// Eventy (i zmiany), o których już było powiadomienie na którymś urządzeniu.
 Set<String> decodeNotified(String? raw) => _decodeSet(raw, 'notified');
 
@@ -100,7 +112,7 @@ Set<String> _decodeSet(String? raw, String key) {
 }
 
 String encodeEntries(Map<String, PlanEntry> entries,
-        {Set<String> notified = const {}, Set<String> read = const {}}) =>
+        {Set<String> notified = const {}, Set<String> read = const {}, Map<String, Attended> attended = const {}}) =>
     jsonEncode({
       'app': 'weeb-radar',
       'version': 1,
@@ -108,10 +120,16 @@ String encodeEntries(Map<String, PlanEntry> entries,
       'entries': {for (final e in entries.entries) e.key: e.value.toJson()},
       if (notified.isNotEmpty) 'notified': (notified.toList()..sort()),
       if (read.isNotEmpty) 'read': (read.toList()..sort()),
+      if (attended.isNotEmpty) 'attended': encodeAttendedList(attended),
     });
 
 /// Zawartość pliku w gistcie.
-typedef SyncDoc = ({Map<String, PlanEntry> entries, Set<String> notified, Set<String> read});
+typedef SyncDoc = ({
+  Map<String, PlanEntry> entries,
+  Set<String> notified,
+  Set<String> read,
+  Map<String, Attended> attended,
+});
 
 class SyncException implements Exception {
   SyncException(this.message);
@@ -161,14 +179,14 @@ class SyncService {
   }
 
   Future<String> createGist(String token, Map<String, PlanEntry> entries,
-      {Set<String> notified = const {}, Set<String> read = const {}}) async {
+      {Set<String> notified = const {}, Set<String> read = const {}, Map<String, Attended> attended = const {}}) async {
     final r = await _client.post(
       Uri.parse('$_api/gists'),
       headers: _headers(token),
       body: jsonEncode({
         'description': 'Weeb Radar: synchronizacja planów (Idę / Może / Zainteresowany / Nie idę)',
         'public': false,
-        'files': {fileName: {'content': encodeEntries(entries, notified: notified, read: read)}},
+        'files': {fileName: {'content': encodeEntries(entries, notified: notified, read: read, attended: attended)}},
       }),
     );
     if (r.statusCode != 201) _fail(r);
@@ -186,16 +204,21 @@ class SyncService {
       final raw = await _client.get(Uri.parse(file['raw_url'] as String), headers: _headers(token));
       if (raw.statusCode == 200) content = raw.body;
     }
-    return (entries: decodeEntries(content), notified: decodeNotified(content), read: decodeRead(content));
+    return (
+      entries: decodeEntries(content),
+      notified: decodeNotified(content),
+      read: decodeRead(content),
+      attended: decodeAttended(content),
+    );
   }
 
   Future<void> write(String token, String gistId, Map<String, PlanEntry> entries,
-      {Set<String> notified = const {}, Set<String> read = const {}}) async {
+      {Set<String> notified = const {}, Set<String> read = const {}, Map<String, Attended> attended = const {}}) async {
     final r = await _client.patch(
       Uri.parse('$_api/gists/$gistId'),
       headers: _headers(token),
       body: jsonEncode({
-        'files': {fileName: {'content': encodeEntries(entries, notified: notified, read: read)}},
+        'files': {fileName: {'content': encodeEntries(entries, notified: notified, read: read, attended: attended)}},
       }),
     );
     if (r.statusCode != 200) _fail(r);
@@ -204,12 +227,21 @@ class SyncService {
   /// Pełna runda: pobierz, połącz, odeślij. Zwraca połączony stan i id gista.
   /// [notified] łączy się jako suma, żeby to samo powiadomienie nie wyskoczyło
   /// i na telefonie, i na komputerze. [read] (przeczytane) tak samo.
-  Future<({Map<String, PlanEntry> entries, Set<String> notified, Set<String> read, String gistId})> sync(
+  /// [attended] (historia „Byłem”) łączy się jak plany: nowsza zmiana wygrywa.
+  Future<
+      ({
+        Map<String, PlanEntry> entries,
+        Set<String> notified,
+        Set<String> read,
+        Map<String, Attended> attended,
+        String gistId,
+      })> sync(
     String token,
     String? gistId,
     Map<String, PlanEntry> local, {
     Set<String> notified = const {},
     Set<String> read = const {},
+    Map<String, Attended> attended = const {},
   }) async {
     String? id = gistId;
     SyncDoc? remote = id == null ? null : await this.read(token, id);
@@ -223,18 +255,23 @@ class SyncService {
         entries: local,
         notified: notified,
         read: read,
-        gistId: await createGist(token, local, notified: notified, read: read),
+        attended: attended,
+        gistId: await createGist(token, local, notified: notified, read: read, attended: attended),
       );
     }
     final theirs = remote.entries;
     final merged = mergeEntries(local, theirs);
     final allNotified = {...remote.notified, ...notified};
     final allRead = {...remote.read, ...read};
+    final theirsAttended = remote.attended;
+    final allAttended = mergeAttended(attended, theirsAttended);
     final changed = merged.length != theirs.length ||
+        allAttended.length != theirsAttended.length ||
+        allAttended.entries.any((e) => theirsAttended[e.key] != e.value) ||
         merged.entries.any((e) => theirs[e.key] != e.value) ||
         allNotified.length != remote.notified.length ||
         allRead.length != remote.read.length;
-    if (changed) await write(token, id, merged, notified: allNotified, read: allRead);
-    return (entries: merged, notified: allNotified, read: allRead, gistId: id);
+    if (changed) await write(token, id, merged, notified: allNotified, read: allRead, attended: allAttended);
+    return (entries: merged, notified: allNotified, read: allRead, attended: allAttended, gistId: id);
   }
 }
