@@ -954,6 +954,67 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ======================================================================
+  // Kopia zapasowa (plik JSON): plany, „Byłem”, własne eventy, artyści
+  // ======================================================================
+
+  /// Wszystko, czego nie da się odtworzyć z feedu, w jednym pliku.
+  String exportBackup() => const JsonEncoder.withIndent(' ').convert({
+    'app': 'weeb-radar-backup',
+    'version': 1,
+    'created': DateTime.now().toUtc().toIso8601String(),
+    'entries': {for (final e in entries.entries) e.key: e.value.toJson()},
+    'attended': encodeAttendedList(attendedAll),
+    'read': (readIds.toList()..sort()),
+    'manual': manualEvents.map((e) => e.toJson()).toList(),
+    'artists': artists,
+  });
+
+  /// Dokłada kopię do tego, co jest w apce (nic nie kasuje: przy tym samym
+  /// wpisie wygrywa nowsza zmiana, jak przy synchronizacji). Zwraca podsumowanie.
+  String importBackup(String raw) {
+    final Object? j;
+    try {
+      j = jsonDecode(raw);
+    } catch (_) {
+      throw const FormatException('To nie jest plik kopii Weeb Radaru.');
+    }
+    if (j is! Map || j['app'] != 'weeb-radar-backup') {
+      throw const FormatException('To nie jest plik kopii Weeb Radaru.');
+    }
+    final theirPlans = decodeEntries(raw);
+    final theirAttended = decodeAttended(raw);
+    final newPlans = theirPlans.keys.where((k) => !entries.containsKey(k)).length;
+    final newAttended = theirAttended.entries.where((e) => !e.value.deleted && !attendedAll.containsKey(e.key)).length;
+    entries = mergeEntries(entries, theirPlans);
+    attendedAll = mergeAttended(attendedAll, theirAttended);
+    readIds.addAll(decodeRead(raw));
+    _prefs.setStringList('read.ids', readIds.toList());
+    final have = {for (final m in manualEvents) m.id};
+    final theirManual = [
+      for (final e in (j['manual'] as List?) ?? const [])
+        if (e is Map) RadarEvent.fromJson(e.cast<String, dynamic>(), origin: EventOrigin.manual),
+    ].where((e) => e.id.isNotEmpty && !have.contains(e.id)).toList();
+    if (theirManual.isNotEmpty) {
+      manualEvents = [...manualEvents, ...theirManual];
+      _prefs.setString('events.manual', jsonEncode(manualEvents.map((e) => e.toJson()).toList()));
+    }
+    final known = {for (final a in artists) a.toLowerCase()};
+    final theirArtists = [
+      for (final a in (j['artists'] as List?) ?? const [])
+        if (a is String && a.trim().isNotEmpty && !known.contains(a.trim().toLowerCase())) a.trim(),
+    ];
+    if (theirArtists.isNotEmpty) {
+      artists = [...artists, ...theirArtists];
+      _patterns.clear();
+      _prefs.setStringList('taste.artists', artists);
+    }
+    _saveEntries();
+    _saveAttended(); // zapisuje, odświeża widoki i puszcza synchronizację
+    return 'Wczytano: $newPlans nowych planów, $newAttended nowych wpisów „Byłem”, '
+        '${theirManual.length} własnych eventów, ${theirArtists.length} artystów.';
+  }
+
   @visibleForTesting
   void debugSetEvents(List<RadarEvent> list) {
     _remoteEvents = list;

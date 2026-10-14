@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../background/background.dart';
@@ -206,6 +208,8 @@ class SettingsPage extends StatelessWidget {
           const SectionTitle('Synchronizacja telefon ↔ komputer'),
           const _SyncCard(),
         ],
+        const SectionTitle('Kopia zapasowa'),
+        const _BackupCard(),
         const SizedBox(height: 18),
         Center(
           child: Text(
@@ -550,6 +554,107 @@ class _Slider extends StatelessWidget {
         ),
         SizedBox(width: 44, child: Text(display, textAlign: TextAlign.end)),
       ],
+    );
+  }
+}
+
+/// Plany i historia „Byłem” w pliku: na nowy telefon, po reinstalacji albo na wszelki wypadek.
+class _BackupCard extends StatefulWidget {
+  const _BackupCard();
+
+  @override
+  State<_BackupCard> createState() => _BackupCardState();
+}
+
+class _BackupCardState extends State<_BackupCard> {
+  bool _busy = false;
+
+  void _say(String text) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+
+  Future<void> _export() async {
+    final s = AppScope.read(context);
+    setState(() => _busy = true);
+    try {
+      final day = DateTime.now().toIso8601String().substring(0, 10);
+      final uri = await FilePicker.saveFile(
+        dialogTitle: 'Zapisz kopię',
+        fileName: 'weeb-radar-kopia-$day.json',
+        bytes: utf8.encode(s.exportBackup()),
+        mimeType: 'application/json',
+      );
+      if (uri != null && mounted) _say('Kopia zapisana.');
+    } catch (e) {
+      if (mounted) _say('Nie udało się zapisać kopii: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _import() async {
+    final s = AppScope.read(context);
+    setState(() => _busy = true);
+    try {
+      final f = await FilePicker.pickFile(dialogTitle: 'Wybierz plik kopii (.json)');
+      if (f == null) return;
+      final msg = s.importBackup(utf8.decode(await f.readAsBytes()));
+      if (mounted) _say(msg);
+    } on FormatException catch (e) {
+      if (mounted) _say(e.message);
+    } catch (e) {
+      if (mounted) _say('Nie udało się wczytać kopii: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final theme = Theme.of(context);
+    final small = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    final plans = s.entries.values.where((e) => !e.isEmpty).length;
+    final synced = !friendsEdition && s.syncEnabled;
+    return Glass(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'W apce: $plans planów, ${s.attended.length} wpisów „Byłem”, ${s.manualEvents.length} własnych eventów.',
+            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            synced
+                ? 'Synchronizacja jest włączona, więc wszystko leży też w Twoim prywatnym gistcie na GitHubie. '
+                      'Plik kopii to dodatkowe zabezpieczenie.'
+                : 'Bez synchronizacji wszystko jest tylko na tym urządzeniu. Zapisz kopię do pliku '
+                      '(np. na Dysk Google albo do Pobranych), żeby nic nie zginęło po zmianie telefonu.',
+            style: small,
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FilledButton.tonalIcon(
+                onPressed: _busy ? null : _export,
+                icon: const Icon(Icons.save_alt_rounded),
+                label: const Text('Zapisz kopię do pliku'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _busy ? null : _import,
+                icon: const Icon(Icons.upload_file_rounded),
+                label: const Text('Wczytaj kopię'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Wczytanie niczego nie kasuje: dokłada brakujące wpisy, a przy tym samym wygrywa nowsza zmiana.',
+            style: small,
+          ),
+        ],
+      ),
     );
   }
 }
