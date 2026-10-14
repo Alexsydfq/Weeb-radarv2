@@ -55,14 +55,25 @@ class AttendedHistory extends StatelessWidget {
               ],
               const SizedBox(height: 8),
               Text(
-                'Odhaczasz „${byEdition('Byłem', 'Byłem/am')}” w szczegółach eventu po jego starcie, a koncert spoza apki dopiszesz przyciskiem niżej.',
+                'Wybierz koncert z listy minionych (archiwum od 2023, z wyszukiwarką), odhacz „${byEdition('Byłem', 'Byłem/am')}” w szczegółach eventu albo dopisz ręcznie.',
                 style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: 10),
-              FilledButton.tonalIcon(
-                onPressed: () => Navigator.push(context, AttendedEditPage.route()),
-                icon: const Icon(Icons.add_rounded),
-                label: Text(byEdition('Dopisz koncert, na którym byłem', 'Dopisz koncert')),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  FilledButton.tonalIcon(
+                    onPressed: () => Navigator.push(context, PastEventPicker.route()),
+                    icon: const Icon(Icons.search_rounded),
+                    label: const Text('Wybierz z listy koncertów'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.push(context, AttendedEditPage.route()),
+                    icon: const Icon(Icons.edit_rounded),
+                    label: const Text('Dopisz ręcznie'),
+                  ),
+                ],
               ),
             ],
           ),
@@ -322,6 +333,164 @@ class _AttendedEditPageState extends State<AttendedEditPage> {
                   ),
                 ],
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Wybór „Byłem” z listy minionych eventów (feed + archiwum), z wyszukiwarką.
+class PastEventPicker extends StatefulWidget {
+  const PastEventPicker({super.key});
+
+  static Route<void> route() => MaterialPageRoute(builder: (_) => const PastEventPicker());
+
+  @override
+  State<PastEventPicker> createState() => _PastEventPickerState();
+}
+
+class _PastEventPickerState extends State<PastEventPicker> {
+  String _q = '';
+
+  @override
+  void initState() {
+    super.initState();
+    final s = AppScope.read(context);
+    if (s.archive.isEmpty) s.loadArchive();
+  }
+
+  static String _fold(String s) => s
+      .toLowerCase()
+      .replaceAll(RegExp('[ąà]'), 'a')
+      .replaceAll(RegExp('[ćç]'), 'c')
+      .replaceAll(RegExp('[ęéè]'), 'e')
+      .replaceAll('ł', 'l')
+      .replaceAll('ń', 'n')
+      .replaceAll('ó', 'o')
+      .replaceAll('ś', 's')
+      .replaceAll(RegExp('[źż]'), 'z');
+
+  bool _matches(RadarEvent e) {
+    if (_q.isEmpty) return true;
+    final hay = _fold(
+      '${e.artist} ${e.title} ${e.stops.map((s) => '${s.city} ${s.venue} ${countryName(s.cc)}').join(' ')} ${e.start.year}',
+    );
+    return _fold(_q).split(RegExp(r'\s+')).where((w) => w.isNotEmpty).every(hay.contains);
+  }
+
+  Future<void> _pick(RadarEvent e) async {
+    final s = AppScope.read(context);
+    final today = todayDate();
+    final stops = e.stops.where((x) => !x.date.isAfter(today)).toList();
+    var chosen = e;
+    if (stops.length > 1) {
+      final st = await showModalBottomSheet<EventStop>(
+        context: context,
+        showDragHandle: true,
+        builder: (c) => SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              const Padding(padding: EdgeInsets.fromLTRB(16, 0, 16, 8), child: Text('Na którym koncercie trasy?')),
+              for (final x in stops.reversed)
+                ListTile(
+                  leading: Text(flagOf(x.cc), style: const TextStyle(fontSize: 22)),
+                  title: Text(x.city.isEmpty ? countryName(x.cc) : x.city),
+                  subtitle: Text([formatLong(x.date), if (x.venue.isNotEmpty) x.venue].join(' · ')),
+                  onTap: () => Navigator.pop(c, x),
+                ),
+            ],
+          ),
+        ),
+      );
+      if (st == null) return;
+      chosen = e.withChosen(st);
+    }
+    if (!s.wasAt(e.id)) s.toggleAttended(chosen);
+    if (!mounted) return;
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Zapisane w historii: ${e.artist}')));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final theme = Theme.of(context);
+    final list = s.pastEvents.where(_matches).toList();
+    return AppBackground(
+      child: Scaffold(
+        appBar: AppBar(title: Text(byEdition('Na czym byłem?', 'Wybierz koncert'))),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: TextField(
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.search_rounded),
+                      hintText: 'Artysta, miasto, rok… np. „nier warszawa”',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (v) => setState(() => _q = v.trim()),
+                  ),
+                ),
+                if (s.archiveLoading) const LinearProgressIndicator(),
+                if (s.archiveError != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(s.archiveError!, style: TextStyle(color: theme.colorScheme.error)),
+                  ),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    children: [
+                      if (list.isEmpty && !s.archiveLoading)
+                        Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            'Nic nie pasuje. Nie ma go w archiwum? Dopisz go ręcznie.',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodyLarge,
+                          ),
+                        ),
+                      for (final e in list.take(200))
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Glass(
+                            padding: EdgeInsets.zero,
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: kindColor(e.kind).withValues(alpha: 0.25),
+                                child: Icon(kindIcon(e.kind), color: kindColor(e.kind)),
+                              ),
+                              title: Text(e.artist, style: const TextStyle(fontWeight: FontWeight.w800)),
+                              subtitle: Text(
+                                [
+                                  formatRange(e),
+                                  e.stops.map((x) => '${flagOf(x.cc)} ${x.city}').toSet().take(4).join(', '),
+                                  if (e.title.isNotEmpty && e.title != e.artist) e.title,
+                                ].where((x) => x.trim().isNotEmpty).join('\n'),
+                              ),
+                              trailing: s.wasAt(e.id) ? const Icon(Icons.verified_rounded, color: attendedColor) : null,
+                              onTap: s.wasAt(e.id) ? null : () => _pick(e),
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: () => Navigator.pushReplacement(context, AttendedEditPage.route()),
+                        icon: const Icon(Icons.edit_rounded),
+                        label: const Text('Nie ma na liście? Dopisz ręcznie'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),

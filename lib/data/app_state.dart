@@ -114,6 +114,36 @@ class AppState extends ChangeNotifier {
   List<Attended> get attended =>
       attendedAll.values.where((a) => !a.deleted).toList()..sort((a, b) => b.date.compareTo(a.date));
 
+  /// Archiwum minionych eventów z feedu (pobierane dopiero przy wybieraniu „Byłem”).
+  List<RadarEvent> archive = [];
+  bool archiveLoading = false;
+  String? archiveError;
+
+  Future<void> loadArchive() async {
+    if (archiveLoading) return;
+    archiveLoading = true;
+    archiveError = null;
+    notifyListeners();
+    try {
+      archive = await _feed.fetchArchive(feedUrl: feedUrl, githubToken: syncToken);
+    } catch (e) {
+      archiveError = 'Nie udało się pobrać archiwum: $e';
+    } finally {
+      archiveLoading = false;
+      if (!_disposed) notifyListeners();
+    }
+  }
+
+  /// Minione (i trwające) eventy do wyboru „Byłem”: z feedu i z archiwum, od najnowszego.
+  List<RadarEvent> get pastEvents {
+    final today = todayDate();
+    final all = <String, RadarEvent>{};
+    for (final e in [...archive, ..._remoteEvents, ...manualEvents, ..._festivals]) {
+      if (!e.start.isAfter(today)) all[e.id] = e;
+    }
+    return all.values.toList()..sort((a, b) => b.start.compareTo(a.start));
+  }
+
   /// Czy event z feedu jest już w historii „Byłem”.
   bool wasAt(String eventId) => attendedAll['ev-$eventId']?.deleted == false;
 

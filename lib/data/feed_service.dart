@@ -97,6 +97,31 @@ class FeedService {
     return parseWatchArtists(utf8.decode(res.bodyBytes));
   }
 
+  /// Archiwum minionych eventów (archive.json obok events.json), do wybierania „Byłem”.
+  Future<List<RadarEvent>> fetchArchive({required String feedUrl, String? githubToken}) async {
+    final i = feedUrl.lastIndexOf('/');
+    final url = i < 0 ? feedUrl : '${feedUrl.substring(0, i)}/archive.json';
+    final (uri, headers) = githubRequest(url, githubToken);
+    final res = await _client.get(uri, headers: headers).timeout(_timeout);
+    if (res.statusCode == 404) return const [];
+    if (res.statusCode != 200) throw 'HTTP ${res.statusCode}';
+    return parseArchive(utf8.decode(res.bodyBytes));
+  }
+
+  static List<RadarEvent> parseArchive(String raw) {
+    try {
+      final j = jsonDecode(raw);
+      final list = j is Map ? j['events'] : null;
+      if (list is! List) return const [];
+      return [
+        for (final e in list)
+          if (e is Map && e['id'] != null && e['artist'] != null) RadarEvent.fromJson(e.cast<String, dynamic>()),
+      ];
+    } catch (_) {
+      return const [];
+    }
+  }
+
   static List<String> parseWatchArtists(String raw) {
     try {
       final j = jsonDecode(raw);

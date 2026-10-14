@@ -3,10 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:weeb_radar/data/app_state.dart';
+import 'package:weeb_radar/data/feed_service.dart';
 import 'package:weeb_radar/data/sync_service.dart';
 import 'package:weeb_radar/models/attended.dart';
 import 'package:weeb_radar/models/event.dart';
 import 'package:weeb_radar/ui/app_scope.dart';
+import 'package:weeb_radar/ui/attended_page.dart';
 import 'package:weeb_radar/ui/favorites_page.dart';
 
 import 'sync_test.dart' show FakeGitHub, device;
@@ -105,14 +107,56 @@ void main() {
     await t.pumpAndSettle();
     expect(find.text('NieR:Orchestra'), findsOneWidget);
     expect(find.text('★★★★★'), findsOneWidget);
-    await t.ensureVisible(find.textContaining('Dopisz koncert'));
+    await t.ensureVisible(find.textContaining('Dopisz ręcznie'));
     await t.pump();
-    await t.tap(find.textContaining('Dopisz koncert'));
+    await t.tap(find.textContaining('Dopisz ręcznie'));
     await t.pump();
     await t.pump(const Duration(seconds: 1));
     await t.enterText(find.byType(TextFormField).first, 'TAK');
     await t.tap(find.text('Zapisz'), warnIfMissed: false);
     await t.pump(const Duration(seconds: 1));
     expect(s.attended.map((a) => a.artist), containsAll(['NieR:Orchestra', 'TAK']));
+  });
+
+  test('archiwum z feedu parsuje się i trafia do listy minionych', () {
+    final list = FeedService.parseArchive(
+      '{"events": [{"id": "past-nier", "artist": "NieR:Orchestra Concert", '
+      '"kind": "symfoniczny", "dateStart": "2026-10-13", "stops": [{"date": "2026-10-13", "city": "Warszawa", "cc": "PL"}]},'
+      ' {"id": "zly"}]}',
+    );
+    expect(list.single.id, 'past-nier');
+    expect(FeedService.parseArchive('śmieci'), isEmpty);
+  });
+
+  testWidgets('„Byłem” wybrane z wyszukiwarki minionych koncertów', (t) async {
+    await initializeDateFormatting('pl');
+    SharedPreferences.setMockInitialValues({});
+    final s = AppState(await SharedPreferences.getInstance())..loadSettings();
+    s.archive = [
+      tour(),
+      RadarEvent.fromJson({
+        'id': 'past-babymetal',
+        'artist': 'BABYMETAL',
+        'kind': 'koncert',
+        'dateStart': '2025-02-01',
+        'stops': [
+          {'date': '2025-02-01', 'city': 'Kraków', 'cc': 'PL'},
+        ],
+      }),
+    ];
+    await t.pumpWidget(
+      AppScope(
+        notifier: s,
+        child: const MaterialApp(home: PastEventPicker()),
+      ),
+    );
+    await t.pump();
+    expect(find.text('BABYMETAL'), findsOneWidget);
+    await t.enterText(find.byType(TextField), 'krakow');
+    await t.pump();
+    expect(find.text('NieR:Orchestra Concert'), findsNothing);
+    await t.tap(find.text('BABYMETAL'));
+    await t.pump();
+    expect(s.wasAt('past-babymetal'), isTrue);
   });
 }
