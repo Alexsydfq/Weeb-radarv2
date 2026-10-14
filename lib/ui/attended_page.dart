@@ -375,7 +375,7 @@ class _PastEventPickerState extends State<PastEventPicker> {
   bool _matches(RadarEvent e) {
     if (_q.isEmpty) return true;
     final hay = _fold(
-      '${e.artist} ${e.title} ${e.stops.map((s) => '${s.city} ${s.venue} ${countryName(s.cc)}').join(' ')} ${e.start.year}',
+      '${e.artist} ${e.title} ${e.lineup.join(' ')} ${e.stops.map((s) => '${s.city} ${s.venue} ${countryName(s.cc)}').join(' ')} ${e.start.year}',
     );
     return _fold(_q).split(RegExp(r'\s+')).where((w) => w.isNotEmpty).every(hay.contains);
   }

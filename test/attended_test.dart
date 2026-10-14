@@ -143,6 +143,16 @@ void main() {
           {'date': '2025-02-01', 'city': 'Kraków', 'cc': 'PL'},
         ],
       }),
+      RadarEvent.fromJson({
+        'id': 'past-animatsuri',
+        'artist': 'Animatsuri 2026',
+        'kind': 'konwent',
+        'dateStart': '2026-07-17',
+        'lineup': ['VocaFest UK', 'Shota Nakama'],
+        'stops': [
+          {'date': '2026-07-17', 'city': 'Warszawa', 'cc': 'PL'},
+        ],
+      }),
     ];
     await t.pumpWidget(
       AppScope(
@@ -152,6 +162,11 @@ void main() {
     );
     await t.pump();
     expect(find.text('BABYMETAL'), findsOneWidget);
+    // Konwent znajduje się też po kimś z line-upu.
+    await t.enterText(find.byType(TextField), 'vocafest');
+    await t.pump();
+    expect(find.text('Animatsuri 2026'), findsOneWidget);
+    expect(find.text('BABYMETAL'), findsNothing);
     await t.enterText(find.byType(TextField), 'krakow');
     await t.pump();
     expect(find.text('NieR:Orchestra Concert'), findsNothing);
