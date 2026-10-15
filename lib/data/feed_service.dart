@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../models/asia_past.dart';
 import '../models/event.dart';
 import '../models/song.dart';
 import 'defaults.dart';
@@ -106,6 +107,17 @@ class FeedService {
     if (res.statusCode == 404) return const [];
     if (res.statusCode != 200) throw 'HTTP ${res.statusCode}';
     return parseArchive(utf8.decode(res.bodyBytes));
+  }
+
+  /// Minione koncerty z Japonii/Azji (asia_archive.json obok events.json), do szukania nagrań.
+  Future<List<AsiaPast>> fetchAsiaArchive({required String feedUrl, String? githubToken}) async {
+    final i = feedUrl.lastIndexOf('/');
+    final url = i < 0 ? feedUrl : '${feedUrl.substring(0, i)}/asia_archive.json';
+    final (uri, headers) = githubRequest(url, githubToken);
+    final res = await _client.get(uri, headers: headers).timeout(_timeout);
+    if (res.statusCode == 404) return const [];
+    if (res.statusCode != 200) throw 'HTTP ${res.statusCode}';
+    return AsiaPast.parseList(utf8.decode(res.bodyBytes));
   }
 
   static List<RadarEvent> parseArchive(String raw) {

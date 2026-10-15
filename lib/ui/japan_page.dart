@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../edition.dart';
 import '../models/event.dart';
 import 'app_scope.dart';
+import 'asia_history_page.dart';
 import 'refresh.dart';
 import 'util.dart';
 import 'widgets/event_card.dart';
@@ -68,7 +69,10 @@ class _JapanPageState extends State<JapanPage> {
                 const Text('🇯🇵🇰🇷', style: TextStyle(fontSize: 26)),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text('Japonia i Korea', style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w900)),
+                  child: Text(
+                    'Japonia i Korea',
+                    style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w900),
+                  ),
                 ),
                 RefreshButton(loading: s.loading),
               ],
@@ -82,6 +86,36 @@ class _JapanPageState extends State<JapanPage> {
               style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
           ),
+          if (!friendsEdition) ...[
+            Glass(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              highlight: bilibiliBlue,
+              onTap: () => Navigator.of(context).push(AsiaHistoryPage.route()),
+              child: Row(
+                children: [
+                  const Icon(Icons.history_rounded, color: bilibiliBlue),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Historia Azji – nagrania',
+                          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        Text(
+                          'Minione lajwy z frazami na Bilibili, po tagach',
+                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
           Glass(
             padding: const EdgeInsets.symmetric(horizontal: 6),
             radius: 30,

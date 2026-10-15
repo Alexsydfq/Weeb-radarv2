@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../edition.dart';
+import '../models/asia_past.dart';
 import '../models/attended.dart';
 import '../models/event.dart';
 import '../models/song.dart';
@@ -130,6 +131,26 @@ class AppState extends ChangeNotifier {
       archiveError = 'Nie udało się pobrać archiwum: $e';
     } finally {
       archiveLoading = false;
+      if (!_disposed) notifyListeners();
+    }
+  }
+
+  /// Historia koncertów z Japonii/Azji (tylko wydanie Awexa), do szukania nagrań.
+  List<AsiaPast> asiaArchive = [];
+  bool asiaLoading = false;
+  String? asiaError;
+
+  Future<void> loadAsiaArchive() async {
+    if (asiaLoading) return;
+    asiaLoading = true;
+    asiaError = null;
+    notifyListeners();
+    try {
+      asiaArchive = await _feed.fetchAsiaArchive(feedUrl: feedUrl, githubToken: syncToken);
+    } catch (e) {
+      asiaError = 'Nie udało się pobrać historii Azji: $e';
+    } finally {
+      asiaLoading = false;
       if (!_disposed) notifyListeners();
     }
   }
