@@ -202,6 +202,8 @@ class AsiaPastTile extends StatelessWidget {
       'KR' => '🇰🇷',
       'CN' => '🇨🇳',
       'TW' => '🇹🇼',
+      'HK' => '🇭🇰',
+      'SG' => '🇸🇬',
       _ => '🇯🇵',
     };
     final date = e.end.difference(e.start).inDays > 0
